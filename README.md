@@ -4,7 +4,7 @@ The utility provides a quick and easy method of removing all request and/or asse
 
 ## WARNING
 
-This utility permanently deletes request and asset records, and records of entities that are associated to the deletes requests and assets. It is intended to be used only by an administrator of a Hornbill instance at the appropriate stage of the switch-on process, to remove demonstration and test data prior to go-live.
+This utility permanently deletes request and asset records, and records of entities that are associated to the deleted requests and assets. It is intended to be used only by an administrator of a Hornbill instance at the appropriate stage of the switch-on process, to remove demonstration and test data prior to go-live.
 
 ## Quick Links
 - [Installation](#installation)
