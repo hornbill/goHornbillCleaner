@@ -1,0 +1,7 @@
+{
+	"UserName": "username",
+	"Password": "password",
+	"URL": "https://eurapi.hornbill.com/instancename/xmlmc/",
+	"CleanRequests": false,
+	"CleanAssets": false
+}
