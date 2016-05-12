@@ -4,7 +4,7 @@ The utility provides a quick and easy method of removing all request and/or asse
 
 ## WARNING
 
-This utility permanently deletes request and asset records, and records of entities that are associated to the deleted requests and assets. It is intended to be used only by an administrator of a Hornbill instance at the appropriate stage of the switch-on process, to remove demonstration and test data prior to go-live.
+This utility permanently deletes request and asset records, and records of entities that are associated to the deletes requests and assets. It is intended to be used only by an administrator of a Hornbill instance at the appropriate stage of the switch-on process, to remove demonstration and test data prior to go-live.
 
 ## Quick Links
 - [Installation](#installation)
@@ -40,9 +40,15 @@ Example JSON File:
 ## Execute
 Command Line Parameters
 
-There is only one command line parameter of -file=configfile.json . This should point to your json configration file and by default looks for a file in the current working directory called conf.json. If this is present you dont need to have the parameter.
+- file
+This should point to your json configration file and by default looks for a file in the current working directory called conf.json. If this is present you dont need to have the parameter.
 
 'hornbillCleaner.exe -file=conf.json'
+
+- blocksize
+This allows you to override the default number of records that should be retrieved and deleted as "blocks". The default is 20, and this should not need to be overridden.
+
+'hornbillCleaner.exe -blocksize=10'
 
 When you are ready to clear-down your request and/or asset records:
 

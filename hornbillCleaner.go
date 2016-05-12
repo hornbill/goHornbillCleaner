@@ -15,18 +15,19 @@ import (
 )
 
 const (
-	delRecordsBlock = 50
-	toolVer         = "1.0.0"
+	toolVer = "1.0.1"
 )
 
 var (
-	espXmlmc       *apiLib.XmlmcInstStruct
-	cleanerConf    cleanerConfStruct
-	configFileName string
-	maxResults     int
-	resetResults   bool
-	currentBlock   int
-	totalBlocks    int
+	espXmlmc        *apiLib.XmlmcInstStruct
+	cleanerConf     cleanerConfStruct
+	configFileName  string
+	configBlockSize string
+	maxResults      int
+	resetResults    bool
+	currentBlock    int
+	totalBlocks     int
+	blockSize       int
 )
 
 type xmlmcResponse struct {
@@ -57,7 +58,14 @@ type cleanerConfStruct struct {
 func main() {
 
 	flag.StringVar(&configFileName, "file", "conf.json", "Name of Configuration File To Load")
+	flag.StringVar(&configBlockSize, "blocksize", "20", "Number of records to delete per block")
 	flag.Parse()
+
+	blockSize, err := strconv.Atoi(configBlockSize)
+	if err != nil {
+		color.Red("Unable to convert block size of " + configBlockSize + " to type INT for processing")
+		return
+	}
 
 	//Load the configuration file
 	cleanerConf = loadConfig()
@@ -104,8 +112,12 @@ func main() {
 		requestCount := getRecordCount("h_itsm_requests")
 		if requestCount > 0 {
 			currentBlock = 1
-			requestBlocks := float64(requestCount) / float64(delRecordsBlock)
+			espLogger("Block Size: "+strconv.Itoa(blockSize), "debug")
+			requestBlocks := float64(requestCount) / float64(blockSize)
 			totalBlocks = int(math.Ceil(requestBlocks))
+			espLogger("Request Blocks: "+strconv.Itoa(int(requestBlocks)), "debug")
+			espLogger("Total Blocks: "+strconv.Itoa(totalBlocks), "debug")
+
 			espLogger("Number of Requests to delete: "+strconv.Itoa(requestCount), "debug")
 			if maxResults > 0 && requestCount > maxResults {
 				resetResults = true
@@ -124,7 +136,7 @@ func main() {
 		assetCount := getRecordCount("h_cmdb_assets")
 		if assetCount > 0 {
 			currentBlock = 1
-			assetBlocks := float64(assetCount) / float64(delRecordsBlock)
+			assetBlocks := float64(assetCount) / float64(blockSize)
 			totalBlocks = int(math.Ceil(assetBlocks))
 			espLogger("Number of Assets to delete: "+strconv.Itoa(assetCount), "debug")
 			if maxResults > 0 && assetCount > maxResults {
@@ -152,16 +164,18 @@ func getRecordCount(table string) int {
 	espXmlmc.SetParam("query", "SELECT COUNT(*) AS cnt FROM "+table)
 	browse, err := espXmlmc.Invoke("data", "sqlQuery")
 	if err != nil {
-		log.Fatal(err)
+		espLogger("Get Record Count API Invoke failed for table: ["+table+"]", "error")
+		return 0
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(browse), &xmlRespon)
 	if err != nil {
-		log.Fatal(err)
+		espLogger("Get Record Count data unmarshalling failed for table: ["+table+"]", "error")
+		return 0
 	}
 	if xmlRespon.MethodResult != "ok" {
 		color.Red("sqlQuery was unsuccessful")
-		espLogger("sqlQuery was unsuccessful: "+xmlRespon.MethodResult, "error")
+		espLogger("Count sqlQuery was unsuccessful for table ["+table+"]: "+xmlRespon.MethodResult, "error")
 		return 0
 	}
 	return xmlRespon.Params.RecordCount
@@ -172,12 +186,14 @@ func getMaxRecordsSetting() int {
 	espXmlmc.SetParam("filter", "api.xmlmc.queryExec.maxResultsAllowed")
 	browse, err := espXmlmc.Invoke("admin", "sysOptionGet")
 	if err != nil {
-		log.Fatal(err)
+		espLogger("Call to sysOptionGet for api.xmlmc.queryExec.maxResultsAllowed failed.", "error")
+		return 0
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(browse), &xmlRespon)
 	if err != nil {
-		log.Fatal(err)
+		espLogger("Unmarshalling of data for sysOptionGet for api.xmlmc.queryExec.maxResultsAllowed failed.", "error")
+		return 0
 	}
 	if xmlRespon.MethodResult != "ok" {
 		espLogger("sysOptionGet was unsuccessful: "+xmlRespon.MethodResult, "error")
@@ -195,12 +211,14 @@ func setMaxRecordsSetting(newMaxResults int) bool {
 	espXmlmc.CloseElement("option")
 	browse, err := espXmlmc.Invoke("admin", "sysOptionSet")
 	if err != nil {
-		log.Fatal(err)
+		espLogger("Call to sysOptionSet for api.xmlmc.queryExec.maxResultsAllowed data failed.", "error")
+		return false
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(browse), &xmlRespon)
 	if err != nil {
-		log.Fatal(err)
+		espLogger("Unmarshalling of data for sysOptionGet for api.xmlmc.queryExec.maxResultsAllowed failed.", "error")
+		return false
 	}
 	if xmlRespon.MethodResult != "ok" {
 		color.Red("sysOptionSet was unsuccessful")
@@ -211,7 +229,7 @@ func setMaxRecordsSetting(newMaxResults int) bool {
 	return true
 }
 
-//processEntityClean - iterates through and processes record blocks of size defined in const delRecordsBlock
+//processEntityClean - iterates through and processes record blocks of size defined in flag blockSize
 func processEntityClean(entity string) {
 	exitLoop := false
 	for exitLoop == false {
@@ -236,12 +254,14 @@ func deleteRecords(entity string, records []string) {
 	}
 	deleted, err := espXmlmc.Invoke("data", "entityDeleteRecord")
 	if err != nil {
-		log.Fatal(err)
+		espLogger("Delete Records failed for entity ["+entity+"], block " + strconv.Itoa(currentBlock), "error")
+		return
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(deleted), &xmlRespon)
 	if err != nil {
-		log.Fatal(err)
+		espLogger("Delete Records response unmarshall failes for entity ["+entity+"], block " + strconv.Itoa(currentBlock), "error")
+		return
 	}
 	if xmlRespon.MethodResult != "ok" {
 		espLogger("entityDeleteRecords was unsuccessful: "+xmlRespon.MethodResult, "error")
@@ -259,17 +279,20 @@ func getRecordIDs(entity string) []string {
 	} else {
 		color.Green("All " + entity + " records processed.")
 	}
+
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("entity", entity)
-	espXmlmc.SetParam("maxResults", strconv.Itoa(delRecordsBlock))
+	espXmlmc.SetParam("maxResults", configBlockSize)
 	browse, err := espXmlmc.Invoke("data", "entityBrowseRecords")
 	if err != nil {
-		log.Fatal(err)
+		espLogger("Call to entityBrowseRecords ["+entity+"] failed when returning block " + strconv.Itoa(currentBlock), "error")
+		return nil
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(browse), &xmlRespon)
 	if err != nil {
-		log.Fatal(err)
+		espLogger("Unmarshal of entityBrowseRecords ["+entity+"] data failed when returning block " + strconv.Itoa(currentBlock), "error")
+		return nil
 	}
 	if xmlRespon.MethodResult != "ok" {
 		espLogger("entityBrowseRecords was unsuccessful: "+xmlRespon.MethodResult, "error")
@@ -290,7 +313,7 @@ func login() bool {
 	espXmlmc.SetParam("password", base64.StdEncoding.EncodeToString([]byte(cleanerConf.Password)))
 	XMLLogin, err := espXmlmc.Invoke("session", "userLogon")
 	if err != nil {
-		log.Fatal(err)
+		return false
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(XMLLogin), &xmlRespon)
@@ -324,7 +347,7 @@ func loadConfig() cleanerConfStruct {
 
 	err := decoder.Decode(&conf)
 	if err != nil {
-		log.Fatal(err)
+		color.Red("Error decoding configuration file!")
 	}
 	return conf
 }
