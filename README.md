@@ -46,7 +46,7 @@ This should point to your json configration file and by default looks for a file
 'hornbillCleaner.exe -file=conf.json'
 
 - blocksize
-This allows you to override the default number of records that should be retrieved and deleted as "blocks". The default is 20, and this should not need to be overridden.
+This allows you to override the default number of records that should be retrieved and deleted as "blocks". The default is 3, and this should not need to be overridden.
 
 'hornbillCleaner.exe -blocksize=10'
 

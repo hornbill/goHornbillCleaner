@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	toolVer = "1.0.1"
+	toolVer = "1.0.2"
 )
 
 var (
@@ -58,7 +58,7 @@ type cleanerConfStruct struct {
 func main() {
 
 	flag.StringVar(&configFileName, "file", "conf.json", "Name of Configuration File To Load")
-	flag.StringVar(&configBlockSize, "blocksize", "20", "Number of records to delete per block")
+	flag.StringVar(&configBlockSize, "blocksize", "3", "Number of records to delete per block")
 	flag.Parse()
 
 	blockSize, err := strconv.Atoi(configBlockSize)
@@ -80,7 +80,8 @@ func main() {
 	fmt.Println("")
 	color.Red(" WARNING!")
 	color.Red(" This utility will delete all records from the following entities in")
-	color.Red(" your Hornbill instance, as specified in your configuration file: ")
+	color.Red(" Hornbill instance: "+cleanerConf.URL);
+	color.Red(" as specified in your configuration file: ")
 	fmt.Println("")
 	if cleanerConf.CleanRequests {
 		color.Magenta(" * All Requests (and related data)")
@@ -313,14 +314,20 @@ func login() bool {
 	espXmlmc.SetParam("password", base64.StdEncoding.EncodeToString([]byte(cleanerConf.Password)))
 	XMLLogin, err := espXmlmc.Invoke("session", "userLogon")
 	if err != nil {
+		color.Red("Error returned when attempting to run Login API call.")
+		fmt.Println(err)
 		return false
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(XMLLogin), &xmlRespon)
 	if err != nil {
+		color.Red("Error returned when attempting to unmarshal Login API call response.")
+		fmt.Println(err)
 		return false
 	}
 	if xmlRespon.MethodResult != "ok" {
+		color.Red("Error returned when attempting to log in to your instance.")
+		fmt.Println(xmlRespon)
 		return false
 	}
 	return true

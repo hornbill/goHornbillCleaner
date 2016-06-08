@@ -1,3 +1,10 @@
+## 1.0.2 (June 8th, 2016)
+
+Features:
+
+  - Reduced record block size default down to 3
+  - Improved logging output
+
 ## 1.0.1 (May 12, 2016)
 
 Features:
