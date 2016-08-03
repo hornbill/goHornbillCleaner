@@ -27,7 +27,8 @@ Example JSON File:
         "Password": "password",
         "URL": "https://eurapi.hornbill.com/instancename/xmlmc/"
         "CleanRequests": false,
-        "CleanAssets": false
+        "CleanAssets": false,
+        "RequestClass": "Change Request"
 }
 ```
 
@@ -36,19 +37,20 @@ Example JSON File:
 * URL : This is the url of the API endpoint of your instance. It must be https, and include /xmlmc/ at the end of the url. You must replace "instancename" with the name of your Hornbill instance.
 * CleanRequests : Set to true to remove all Service Manager Requests (and related entity data) from a Hornbill instance
 * CleanAssets : Set to true to remove all Assets (and related entity data) from a Hornbill instance  
+* RequestClass : Specify the class of the requests you wish to delete
 
 ## Execute
 Command Line Parameters
 
 - file
-This should point to your json configration file and by default looks for a file in the current working directory called conf.json. If this is present you dont need to have the parameter.
+This should point to your json configration file and by default looks for a file in the current working directory called conf.json. If this is present you don't need to have the parameter.
 
 'hornbillCleaner.exe -file=conf.json'
 
 - blocksize
-This allows you to override the default number of records that should be retrieved and deleted as "blocks". The default is 3, and this should not need to be overridden.
+This allows you to override the default number of records that should be retrieved and deleted as "blocks". The default is 3, and this should only need to be overridden if your Hornbill instance holds large amounts of records to delete, and you experience errors when running the utility.
 
-'hornbillCleaner.exe -blocksize=10'
+'hornbillCleaner.exe -blocksize=1'
 
 When you are ready to clear-down your request and/or asset records:
 

@@ -1,7 +1,8 @@
 {
-	"UserName": "yourusernamegoeshere",
-	"Password": "yourpasswordgoeshere",
-	"URL": "https://eurapi.hornbill.com/yourinstancenamegoeshere/xmlmc/",
+	"UserName": "adminusernamegoeshere",
+	"Password": "passwordgoeshere",
+	"URL": "https://eurapi.hornbill.com/instancenamegoeshere/xmlmc/",
 	"CleanRequests": false,
-	"CleanAssets": false
+	"CleanAssets": false,
+	"RequestClass": "Request Class Goes Here"
 }

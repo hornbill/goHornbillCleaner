@@ -1,3 +1,11 @@
+## 1.0.3 (August 3rd, 2016)
+
+Features:
+
+  - Added parameter within configuration file, to specify class of requests to delete  
+  - Improved performance of request deletion
+  - Improved error output to display
+
 ## 1.0.2 (June 8th, 2016)
 
 Features:
