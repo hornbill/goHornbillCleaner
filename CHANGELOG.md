@@ -1,3 +1,14 @@
+## 1.0.4 (January 12th, 2017)
+
+NOTE! Removing requests using this version of the Hornbill Cleaner requires Service Manager v 2.38 or above!
+
+Features:
+
+  - Added code to process the deletion of:
+    - Request Workflow instances
+    - Request Activities
+    - Request timer events
+
 ## 1.0.3 (August 3rd, 2016)
 
 Features:
