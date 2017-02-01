@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	toolVer = "1.0.4"
+	toolVer = "1.0.5"
 	appServiceManager = "com.hornbill.servicemanager"
 )
 
@@ -357,6 +357,12 @@ func deleteRecords(entity string, records []string) {
 					}
 				}
 			}
+			//-- Spawned workflow
+			requestWorkflow := getRequestWorkflow(callRef)
+			if requestWorkflow != "<nil>" && requestWorkflow != "" {
+				deleteWorkflow(requestWorkflow)
+			}
+
 			//-- Request Tasks
 			requestTasks := getRequestTasks(callRef)
 			for _, stateMap := range requestTasks {
@@ -365,11 +371,6 @@ func deleteRecords(entity string, records []string) {
 				}
 			}
 
-			//-- Spawned workflow
-			requestWorkflow := getRequestWorkflow(callRef)
-			if requestWorkflow != "<nil>" && requestWorkflow != "" {
-				deleteWorkflow(requestWorkflow)
-			}
 		}
 	}
 

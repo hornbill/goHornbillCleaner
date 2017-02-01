@@ -1,3 +1,9 @@
+## 1.0.5 (February 1st, 2017)
+
+Defect fix:
+
+  - Changed the order in which request extended information is deleted, so that workflow tasks can be deleted successfully 
+
 ## 1.0.4 (January 12th, 2017)
 
 NOTE! Removing requests using this version of the Hornbill Cleaner requires Service Manager v 2.38 or above!
