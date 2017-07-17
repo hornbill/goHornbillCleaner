@@ -4,10 +4,6 @@ Feature:
 
   - Now supports the deletion of Asset CMDB links when clearing down asset records
 
-## 1.0.4 (January 12th, 2017)
-
-NOTE! Removing requests using this version of the Hornbill Cleaner requires Service Manager v 2.38 or above!
-
 ## 1.0.5 (February 1st, 2017)
 
 Defect fix:
