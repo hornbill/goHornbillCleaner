@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	toolVer           = "1.0.6"
+	toolVer           = "1.1.0"
 	appServiceManager = "com.hornbill.servicemanager"
 )
 
@@ -57,7 +57,7 @@ type paramsStruct struct {
 	AssetLinkIDs []string `xml:"rowData>row>h_pk_id"`
 	TimerIDs     []string `xml:"rowData>row>h_pk_tid"`
 	BPMID        string   `xml:"primaryEntityData>record>h_bpm_id"`
-	RecordCount  int      `xml:"rowData>row>cnt"`
+	RecordCount  int      `xml:"count"`
 	MaxResults   int      `xml:"option>value"`
 }
 
@@ -71,12 +71,16 @@ type workflowStruct struct {
 }
 
 type cleanerConfStruct struct {
-	UserName      string
-	Password      string
-	URL           string
-	CleanRequests bool
-	CleanAssets   bool
-	RequestClass  string
+	UserName           string
+	Password           string
+	URL                string
+	CleanRequests      bool
+	RequestServices    []int
+	RequestStatuses    []string
+	RequestTypes       []string
+	RequestLogDateFrom string
+	RequestLogDateTo   string
+	CleanAssets        bool
 }
 
 func main() {
@@ -108,7 +112,7 @@ func main() {
 	color.Red(" as specified in your configuration file: ")
 	fmt.Println("")
 	if cleanerConf.CleanRequests {
-		color.Magenta(" * All Requests (and related data)")
+		color.Magenta(" * Requests (and related data)")
 	}
 	if cleanerConf.CleanAssets {
 		color.Magenta(" * All Assets (and related data)")
@@ -200,15 +204,75 @@ func main() {
 
 //getRecordCount - takes a table name, returns the total number of records in the entity
 func getRecordCount(table string) int {
-	strQuery := "SELECT COUNT(*) AS cnt FROM " + table
-	if table == "h_itsm_requests" && cleanerConf.RequestClass != "" {
-		strQuery += " WHERE h_requesttype = '" + cleanerConf.RequestClass + "'"
+	strQuery := ""
+	if table == "h_itsm_requests" {
+		if len(cleanerConf.RequestTypes) > 0 {
+			strQuery += " h_requesttype IN ("
+			firstElement := true
+			for _, reqType := range cleanerConf.RequestTypes {
+				if firstElement == false {
+					strQuery += ","
+				}
+				strQuery += "'" + reqType + "'"
+				firstElement = false
+			}
+			strQuery += ")"
+		}
+
+		if len(cleanerConf.RequestStatuses) > 0 {
+			if strQuery != "" {
+				strQuery += " AND"
+			}
+			strQuery += " h_status IN ("
+			firstElement := true
+			for _, reqStatus := range cleanerConf.RequestStatuses {
+				if firstElement == false {
+					strQuery += ","
+				}
+				strQuery += "'" + reqStatus + "'"
+				firstElement = false
+			}
+			strQuery += ")"
+		}
+
+		if len(cleanerConf.RequestServices) > 0 {
+			if strQuery != "" {
+				strQuery += " AND"
+			}
+			strQuery += " h_fk_serviceid IN ("
+			firstElement := true
+			for _, reqService := range cleanerConf.RequestServices {
+				if firstElement == false {
+					strQuery += ","
+				}
+				strQuery += strconv.Itoa(reqService)
+				firstElement = false
+			}
+			strQuery += ")"
+		}
+
+		if cleanerConf.RequestLogDateFrom != "" {
+			if strQuery != "" {
+				strQuery += " AND"
+			}
+			strQuery += " h_datelogged >= '" + cleanerConf.RequestLogDateFrom + "'"
+		}
+		if cleanerConf.RequestLogDateTo != "" {
+			if strQuery != "" {
+				strQuery += " AND"
+			}
+			strQuery += " h_datelogged <= '" + cleanerConf.RequestLogDateTo + "'"
+		}
 	}
 
 	espXmlmc.SetParam("database", "swdata")
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
-	espXmlmc.SetParam("query", strQuery)
-	browse, err := espXmlmc.Invoke("data", "sqlQuery")
+	espXmlmc.SetParam("table", table)
+	if strQuery != "" {
+		espXmlmc.SetParam("where", strQuery)
+	}
+
+	browse, err := espXmlmc.Invoke("data", "getRecordCount")
 	if err != nil {
 		color.Red("Get Record Count API Invoke failed for table: [" + table + "]")
 		espLogger("Get Record Count API Invoke failed for table: ["+table+"]", "error")
@@ -307,11 +371,24 @@ func getRecordIDs(entity string) []string {
 		espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 		espXmlmc.SetParam("queryName", "_listRequestsOfType")
 		espXmlmc.OpenElement("queryParams")
-		if cleanerConf.RequestClass != "" {
-			espXmlmc.SetParam("type", cleanerConf.RequestClass)
+		for _, reqType := range cleanerConf.RequestTypes {
+			espXmlmc.SetParam("type", reqType)
 		}
 		espXmlmc.SetParam("limit", configBlockSize)
+		for _, reqStatus := range cleanerConf.RequestStatuses {
+			espXmlmc.SetParam("status", reqStatus)
+		}
+		for _, reqService := range cleanerConf.RequestServices {
+			espXmlmc.SetParam("service", strconv.Itoa(reqService))
+		}
+		if cleanerConf.RequestLogDateFrom != "" {
+			espXmlmc.SetParam("fromDateTime", cleanerConf.RequestLogDateFrom)
+		}
+		if cleanerConf.RequestLogDateTo != "" {
+			espXmlmc.SetParam("toDateTime", cleanerConf.RequestLogDateTo)
+		}
 		espXmlmc.CloseElement("queryParams")
+
 		browse, err := espXmlmc.Invoke("data", "queryExec")
 		if err != nil {
 			espLogger("Call to queryExec ["+entity+"] failed when returning block "+strconv.Itoa(currentBlock), "error")
