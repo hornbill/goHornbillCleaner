@@ -42,6 +42,10 @@ Example JSON File:
                 "Incident",
                 "Service Request"
         ],
+        "RequestReferences":[
+                "CHR00000021",
+                "INC00000003"
+        ]
         "RequestLogDateFrom":"2016-01-01 00:00:00",
         "RequestLogDateTo":"2018-01-01 00:00:00",
         "CleanAssets": false
@@ -51,13 +55,14 @@ Example JSON File:
 - UserName: This is the username which will be used to connect to your Hornbill instance. This user should have the appropriate roles associated to it, to be able to remove request and asset entity records.
 - Password: This is the password for the supplied username.
 - URL : This is the url of the API endpoint of your instance. It must be https, and include /xmlmc/ at the end of the url. You must replace "instancename" with the name of your Hornbill instance.
-- CleanRequests : Set to true to remove all Service Manager Requests (and related entity data) from a Hornbill instance. Filter the requests to be deleted using the following parameters
-        - RequestServices : An array containing Service ID Integers to filter the requests for deletion against. An empty array will remove the Service filter, meaning requests with any or no service associated will be deleted
-        - RequestStatuses : An array containing Status strings to filter the requests for deletion against. An empty array will remove the Status filter, meaning requests at any status will be deleted
-        - RequestTypes : An array containing Request Type strings to filter the requests for deletion against. An empty array will remove the Type filter, meaning requests of any Type will be deleted
-        - RequestLogDateFrom : A date string to filter requests against log date (requests logged after or equal to this date/time), in the format YYYY-MM-DD HH:MM:SS. An empty string will remove the Logged After filter. 
-        - RequestLogDateTo : A date string to filter requests against log date (requests logged before or equal to this date/time), in the format YYYY-MM-DD HH:MM:SS. An empty string will remove the Logged Before filter. 
-* CleanAssets : Set to true to remove all Assets (and related entity data) from a Hornbill instance  
+- CleanRequests : Set to true to remove all Service Manager Requests (and related entity data) from a Hornbill instance. Filter the requests to be deleted using the following parameters:
+  - RequestServices : An array containing Service ID Integers to filter the requests for deletion against. An empty array will remove the Service filter, meaning requests with any or no service associated will be deleted
+  - RequestStatuses : An array containing Status strings to filter the requests for deletion against. An empty array will remove the Status filter, meaning requests at any status will be deleted
+  - RequestTypes : An array containing Request Type strings to filter the requests for deletion against. An empty array will remove the Type filter, meaning requests of any Type will be deleted
+  - RequestLogDateFrom : A date string to filter requests against log date (requests logged after or equal to this date/time), in the format YYYY-MM-DD HH:MM:SS. An empty string will remove the Logged After filter. 
+  - RequestLogDateTo : A date string to filter requests against log date (requests logged before or equal to this date/time), in the format YYYY-MM-DD HH:MM:SS. An empty string will remove the Logged Before filter. 
+  - RequestReferences : An array of Request References to delete. If requests are defined in this array, then ONLY these requests will be deleted. The other parameters above will be ignored. In the example above, requests with reference CHR00000021 and INC00000003 would be deleted, and no other requests would be removed.
+- CleanAssets : Set to true to remove all Assets (and related entity data) from a Hornbill instance  
 
 ## Execute
 Command Line Parameters

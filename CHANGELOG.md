@@ -1,3 +1,8 @@
+## 1.2.0 (November 24th 2017)
+
+Feature:
+  - Added ability to delete specific requests using their reference numbers.
+
 ## 1.1.0 (September 1st, 2017)
 
 Feature:

@@ -4,10 +4,19 @@
 	"URL": "https://eurapi.hornbill.com/instancename/xmlmc/",
 	"CleanRequests": false,
 	"RequestServices":[
+		{
+			"ServiceID":"",
+			"CatalogItemIDs":[
+				"",
+				""
+			]
+		}
 	],
 	"RequestStatuses":[
 	],
 	"RequestTypes":[
+	],
+	"RequestReferences":[
 	],
 	"RequestLogDateFrom":"",
 	"RequestLogDateTo":"",

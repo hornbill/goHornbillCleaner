@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	toolVer           = "1.1.0"
+	toolVer           = "1.2.0"
 	appServiceManager = "com.hornbill.servicemanager"
 )
 
@@ -28,7 +28,7 @@ var (
 	resetResults    bool
 	currentBlock    int
 	totalBlocks     int
-	blockSize       int
+	BlockSize       int
 	espXmlmc        *apiLib.XmlmcInstStruct
 )
 
@@ -80,16 +80,18 @@ type cleanerConfStruct struct {
 	RequestTypes       []string
 	RequestLogDateFrom string
 	RequestLogDateTo   string
+	RequestReferences  []string
 	CleanAssets        bool
 }
 
 func main() {
 
 	flag.StringVar(&configFileName, "file", "conf.json", "Name of Configuration File To Load")
-	flag.StringVar(&configBlockSize, "blocksize", "3", "Number of records to delete per block")
+	flag.StringVar(&configBlockSize, "BlockSize", "3", "Number of records to delete per block")
 	flag.Parse()
 
-	blockSize, err := strconv.Atoi(configBlockSize)
+	BlockSize, err := strconv.Atoi(configBlockSize)
+	fmt.Println(BlockSize)
 	if err != nil {
 		color.Red("Unable to convert block size of " + configBlockSize + " to type INT for processing")
 		return
@@ -137,25 +139,43 @@ func main() {
 	//Process Request Records
 	espLogger("System Setting Max Results: "+strconv.Itoa(maxResults), "debug")
 	if cleanerConf.CleanRequests {
-		requestCount := getRecordCount("h_itsm_requests")
-		if requestCount > 0 {
+		requestCount := 0
+		if len(cleanerConf.RequestReferences) > 0 {
 			currentBlock = 1
-			espLogger("Block Size: "+strconv.Itoa(blockSize), "debug")
-			requestBlocks := float64(requestCount) / float64(blockSize)
+			requestCount = len(cleanerConf.RequestReferences)
+			espLogger("Block Size: "+strconv.Itoa(BlockSize), "debug")
+			requestBlocks := float64(requestCount) / float64(BlockSize)
 			totalBlocks = int(math.Ceil(requestBlocks))
-			espLogger("Request Blocks: "+strconv.Itoa(int(requestBlocks)), "debug")
-			espLogger("Total Blocks: "+strconv.Itoa(totalBlocks), "debug")
 
 			espLogger("Number of Requests to delete: "+strconv.Itoa(requestCount), "debug")
+			color.Green("Number of Requests to delete: " + strconv.Itoa(requestCount))
 			if maxResults > 0 && requestCount > maxResults {
 				resetResults = true
 				//Update maxResultsAllowed system setting to match number of records to be deleted
 				setMaxRecordsSetting(requestCount)
 			}
-			processEntityClean("Requests")
+			processEntityClean("Requests", BlockSize)
 		} else {
-			espLogger("There are no requests to delete.", "debug")
-			color.Red("There are no requests to delete.")
+			requestCount = getRecordCount("h_itsm_requests")
+			if requestCount > 0 {
+				currentBlock = 1
+				espLogger("Block Size: "+strconv.Itoa(BlockSize), "debug")
+				requestBlocks := float64(requestCount) / float64(BlockSize)
+				totalBlocks = int(math.Ceil(requestBlocks))
+				espLogger("Request Blocks: "+strconv.Itoa(int(requestBlocks)), "debug")
+				espLogger("Total Blocks: "+strconv.Itoa(totalBlocks), "debug")
+
+				espLogger("Number of Requests to delete: "+strconv.Itoa(requestCount), "debug")
+				if maxResults > 0 && requestCount > maxResults {
+					resetResults = true
+					//Update maxResultsAllowed system setting to match number of records to be deleted
+					setMaxRecordsSetting(requestCount)
+				}
+				processEntityClean("Requests", BlockSize)
+			} else {
+				espLogger("There are no requests to delete.", "debug")
+				color.Red("There are no requests to delete.")
+			}
 		}
 	}
 
@@ -164,7 +184,7 @@ func main() {
 		assetCount := getRecordCount("h_cmdb_assets")
 		if assetCount > 0 {
 			currentBlock = 1
-			assetBlocks := float64(assetCount) / float64(blockSize)
+			assetBlocks := float64(assetCount) / float64(BlockSize)
 			totalBlocks = int(math.Ceil(assetBlocks))
 			espLogger("Number of Assets to delete: "+strconv.Itoa(assetCount), "debug")
 			if maxResults > 0 && assetCount > maxResults {
@@ -172,7 +192,7 @@ func main() {
 				//Update maxResultsAllowed system setting to match number of records to be deleted
 				setMaxRecordsSetting(assetCount)
 			}
-			processEntityClean("Asset")
+			processEntityClean("Asset", BlockSize)
 		} else {
 			espLogger("There are no assets to delete.", "debug")
 			color.Red("There are no assets to delete.")
@@ -181,7 +201,7 @@ func main() {
 		assetLinkCount := getRecordCount("h_cmdb_links")
 		if assetLinkCount > 0 {
 			currentBlock = 1
-			assetLinkBlocks := float64(assetLinkCount) / float64(blockSize)
+			assetLinkBlocks := float64(assetLinkCount) / float64(BlockSize)
 			totalBlocks = int(math.Ceil(assetLinkBlocks))
 			espLogger("Number of Asset Links to delete: "+strconv.Itoa(assetLinkCount), "debug")
 			if maxResults > 0 && assetLinkCount > maxResults {
@@ -189,7 +209,7 @@ func main() {
 				//Update maxResultsAllowed system setting to match number of records to be deleted
 				setMaxRecordsSetting(assetLinkCount)
 			}
-			processEntityClean("AssetsLinks")
+			processEntityClean("AssetsLinks", BlockSize)
 		} else {
 			espLogger("There are no asset links to delete.", "debug")
 			color.Red("There are no asset links to delete.")
@@ -345,17 +365,42 @@ func setMaxRecordsSetting(newMaxResults int) bool {
 	return true
 }
 
-//processEntityClean - iterates through and processes record blocks of size defined in flag blockSize
-func processEntityClean(entity string) {
-	exitLoop := false
-	for exitLoop == false {
-		AllRecordIDs := getRecordIDs(entity)
-		if len(AllRecordIDs) == 0 {
-			exitLoop = true
-			continue
-		}
-		deleteRecords(entity, AllRecordIDs)
+//getLowerInt
+func getLowerInt(a, b int) int {
+	if a <= b {
+		return a
 	}
+	return b
+}
+
+//processEntityClean - iterates through and processes record blocks of size defined in flag BlockSize
+func processEntityClean(entity string, chunkSize int) {
+	if len(cleanerConf.RequestReferences) > 0 {
+
+		//Split request slice in to chunks
+		var divided [][]string
+		for i := 0; i < len(cleanerConf.RequestReferences); i += chunkSize {
+			batch := cleanerConf.RequestReferences[i:getLowerInt(i+chunkSize, len(cleanerConf.RequestReferences))]
+			divided = append(divided, batch)
+		}
+		//range through slice, delete request chunks
+		for _, block := range divided {
+			//fmt.Println(block)
+			deleteRecords(entity, block)
+		}
+
+	} else {
+		exitLoop := false
+		for exitLoop == false {
+			AllRecordIDs := getRecordIDs(entity)
+			if len(AllRecordIDs) == 0 {
+				exitLoop = true
+				continue
+			}
+			deleteRecords(entity, AllRecordIDs)
+		}
+	}
+
 	return
 }
 
@@ -520,6 +565,7 @@ func deleteRecords(entity string, records []string) {
 		color.Red("Could not delete records from " + entity + " entity: " + xmlRespon.State.ErrorRet)
 		return
 	}
+	color.Green("Block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " deleted.")
 	currentBlock++
 	return
 }
