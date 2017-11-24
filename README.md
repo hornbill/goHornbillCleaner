@@ -42,12 +42,12 @@ Example JSON File:
                 "Incident",
                 "Service Request"
         ],
+        "RequestLogDateFrom":"2016-01-01 00:00:00",
+        "RequestLogDateTo":"2018-01-01 00:00:00",
         "RequestReferences":[
                 "CHR00000021",
                 "INC00000003"
-        ]
-        "RequestLogDateFrom":"2016-01-01 00:00:00",
-        "RequestLogDateTo":"2018-01-01 00:00:00",
+        ],
         "CleanAssets": false
 }
 ```
