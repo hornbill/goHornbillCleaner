@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	toolVer           = "1.2.0"
+	toolVer           = "1.3.0"
 	appServiceManager = "com.hornbill.servicemanager"
 )
 
@@ -28,8 +28,9 @@ var (
 	resetResults    bool
 	currentBlock    int
 	totalBlocks     int
-	BlockSize       int
-	espXmlmc        *apiLib.XmlmcInstStruct
+	//BlockSize - Size of request or asset blocks to delete
+	BlockSize int
+	espXmlmc  *apiLib.XmlmcInstStruct
 )
 
 type xmlmcResponse struct {
@@ -82,6 +83,8 @@ type cleanerConfStruct struct {
 	RequestLogDateTo   string
 	RequestReferences  []string
 	CleanAssets        bool
+	CleanUsers         bool
+	Users              []string
 }
 
 func main() {
@@ -103,7 +106,7 @@ func main() {
 	//Ask if we want to delete before continuing
 	fmt.Println("")
 	fmt.Println("===== Hornbill Cleaner Utility v" + toolVer + " =====")
-	if !cleanerConf.CleanRequests && !cleanerConf.CleanAssets {
+	if !cleanerConf.CleanRequests && !cleanerConf.CleanAssets && !cleanerConf.CleanUsers {
 		color.Red("No entity data has been specified for cleansing in " + configFileName)
 		return
 	}
@@ -118,6 +121,9 @@ func main() {
 	}
 	if cleanerConf.CleanAssets {
 		color.Magenta(" * All Assets (and related data)")
+	}
+	if cleanerConf.CleanUsers {
+		color.Magenta(" * All Specified Users (and related data)")
 	}
 	fmt.Println("")
 	fmt.Println("Are you sure you want to permanently delete these records? (yes/no):")
@@ -216,6 +222,11 @@ func main() {
 		}
 	}
 
+	if cleanerConf.CleanUsers {
+		for _, v := range cleanerConf.Users {
+			deleteUser(v)
+		}
+	}
 	//Reset maxResultsAllowed system setting back to what it was before the process ran
 	if resetResults {
 		setMaxRecordsSetting(maxResults)
@@ -538,6 +549,14 @@ func deleteRecords(entity string, records []string) {
 				}
 			}
 
+			//-- Asset Associations
+			requestAssets := getRequestAssetLinks(callRef)
+			for _, linkID := range requestAssets {
+				if linkID != "<nil>" && linkID != "" {
+					deleteAssetLink(linkID)
+				}
+			}
+
 		}
 	}
 
@@ -567,6 +586,32 @@ func deleteRecords(entity string, records []string) {
 	}
 	color.Green("Block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " deleted.")
 	currentBlock++
+	return
+}
+
+func deleteUser(strUser string) {
+	//Now delete the block of records
+	espXmlmc.SetParam("userId", strUser)
+
+	deleted, err := espXmlmc.Invoke("admin", "userDelete")
+	if err != nil {
+		espLogger("Delete Records failed for user ["+strUser+"]", "error")
+		color.Red("Delete Records failed for user [" + strUser + "]")
+		return
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(deleted), &xmlRespon)
+	if err != nil {
+		espLogger("Delete Records response unmarshall failed for user ["+strUser+"]", "error")
+		color.Red("Delete Records response unmarshall failed for user [" + strUser + "]")
+		return
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("entityDeleteRecords was unsuccessful for user ["+strUser+"]: "+xmlRespon.State.ErrorRet, "error")
+		color.Red("Could not delete user [" + strUser + "]: " + xmlRespon.State.ErrorRet)
+		return
+	}
+	color.Green("User [" + strUser + "] deleted.")
 	return
 }
 
@@ -629,6 +674,43 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 		return objTasks
 	}
 	return nil
+}
+
+func getRequestAssetLinks(callref string) []string {
+	//Use entityBrowseRecords to get asset entity records
+	callrefURN := "urn:sys:entity:com.hornbill.servicemanager:Requests:" + callref
+	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
+	espXmlmc.SetParam("entity", "AssetsLinks")
+	espXmlmc.SetParam("matchScope", "any")
+	espXmlmc.OpenElement("searchFilter")
+	espXmlmc.SetParam("column", "h_fk_id_l")
+	espXmlmc.SetParam("value", callrefURN)
+	espXmlmc.SetParam("matchType", "exact")
+	espXmlmc.CloseElement("searchFilter")
+	espXmlmc.OpenElement("searchFilter")
+	espXmlmc.SetParam("column", "h_fk_id_r")
+	espXmlmc.SetParam("value", callrefURN)
+	espXmlmc.SetParam("matchType", "exact")
+	espXmlmc.CloseElement("searchFilter")
+	browse, err := espXmlmc.Invoke("data", "entityBrowseRecords2")
+	if err != nil {
+		espLogger("Call to entityBrowseRecords2 failed when returning asset links for "+callref, "error")
+		color.Red("Call to entityBrowseRecords2 failed when returning asset links for " + callref)
+		return nil
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	if err != nil {
+		espLogger("Unmarshal of entityBrowseRecords2 failed when returning asset links for "+callref, "error")
+		color.Red("Unmarshal of entityBrowseRecords2 failed when returning asset links for " + callref)
+		return nil
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("entityBrowseRecords2 was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
+		color.Red("entityBrowseRecords2 was unsuccessful: " + xmlRespon.State.ErrorRet)
+		return nil
+	}
+	return xmlRespon.Params.AssetLinkIDs
 }
 
 //getRequestWorkflow - take a call reference, get all associated rBPM workflow ID
@@ -758,6 +840,34 @@ func deleteWorkflow(workflowID string) {
 		return
 	}
 	espLogger("Workflow instance sucessfully deleted ["+workflowID+"] ", "debug")
+}
+
+//deleteAssetLink - Takes a Link PK ID, sends it to data::entityDelete API for safe deletion
+func deleteAssetLink(linkID string) {
+	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
+	espXmlmc.SetParam("entity", "AssetsLinks")
+	espXmlmc.SetParam("keyValue", linkID)
+	espXmlmc.SetParam("preserveOneToOneData", "false")
+	espXmlmc.SetParam("preserveOneToManyData", "false")
+	browse, err := espXmlmc.Invoke("data", "entityDeleteRecord")
+	if err != nil {
+		espLogger("Deletion of Asset Link failed ["+linkID+"]", "error")
+		color.Red("Deletion of Asset Link failed [" + linkID + "]")
+		return
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	if err != nil {
+		espLogger("Unmarshal of response to deletion of Asset Link failed ["+linkID+"]", "error")
+		color.Red("Unmarshal of response to deletion of Asset Link failed [" + linkID + "]")
+		return
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("API Call to delete Asset Link failed ["+linkID+"] "+xmlRespon.State.ErrorRet, "error")
+		color.Red("API Call to delete Asset Link failed [" + linkID + "] " + xmlRespon.State.ErrorRet)
+		return
+	}
+	espLogger("Asset Link sucessfully deleted ["+linkID+"] ", "debug")
 }
 
 //loadConfig - loads configuration file in to struct
