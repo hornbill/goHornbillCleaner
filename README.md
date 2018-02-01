@@ -1,10 +1,10 @@
 # Hornbill Cleaner
 
-The utility provides a quick and easy method of removing all request and/or asset records from a specified Hornbill instance.
+The utility provides a quick and easy method of removing requests, assets or user records from a specified Hornbill instance.
 
 ## WARNING
 
-This utility permanently deletes request and asset records, and records of entities that are associated to the deletes requests and assets. It is intended to be used only by an administrator of a Hornbill instance at the appropriate stage of the switch-on process, to remove demonstration and test data prior to go-live.
+This utility permanently deletes request, asset or user records, and records of entities that are associated to the deleted records. It is intended to be used only by an administrator of a Hornbill instance at the appropriate stage of the switch-on process, to remove demonstration and test data prior to go-live.
 
 ## Quick Links
 - [Installation](#installation)
@@ -48,7 +48,12 @@ Example JSON File:
                 "CHR00000021",
                 "INC00000003"
         ],
-        "CleanAssets": false
+        "CleanAssets": false,
+        "CleanUsers":true,
+	"Users":[
+                "userIdOne",
+                "userIdTwo"
+        ]
 }
 ```
 
@@ -62,7 +67,9 @@ Example JSON File:
   - RequestLogDateFrom : A date string to filter requests against log date (requests logged after or equal to this date/time), in the format YYYY-MM-DD HH:MM:SS. An empty string will remove the Logged After filter. 
   - RequestLogDateTo : A date string to filter requests against log date (requests logged before or equal to this date/time), in the format YYYY-MM-DD HH:MM:SS. An empty string will remove the Logged Before filter. 
   - RequestReferences : An array of Request References to delete. If requests are defined in this array, then ONLY these requests will be deleted. The other parameters above will be ignored. In the example above, requests with reference CHR00000021 and INC00000003 would be deleted, and no other requests would be removed.
-- CleanAssets : Set to true to remove all Assets (and related entity data) from a Hornbill instance  
+- CleanAssets : Set to true to remove all Assets (and related entity data) from a Hornbill instance 
+- CleanUsers : Set to true to remove all Users listed in the Users array
+- Users : Array of strings, contains a list of User IDs to remove from your Hornbill instance
 
 ## Execute
 Command Line Parameters

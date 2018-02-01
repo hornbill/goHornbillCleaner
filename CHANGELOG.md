@@ -3,6 +3,7 @@
 Feature:
 
   - When requests are being deleted, any asset links records are now also deleted.
+  - Added ability to delete User records
 
 ## 1.2.0 (November 24th, 2017)
 
