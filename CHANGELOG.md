@@ -1,3 +1,9 @@
+## 1.4.0 (June 4th, 2018)
+
+Feature:
+  - Replaced Username & Password session authentication with API key 
+  - Replaced stored username, password and instance URL with command line inputs for instance ID and API Key
+
 ## 1.3.0 (February 1st, 2018)
 
 Feature:

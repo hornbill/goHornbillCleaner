@@ -23,9 +23,6 @@ Example JSON File:
 
 ```
 {
-        "UserName": "admin",
-        "Password": "password",
-        "URL": "https://eurapi.hornbill.com/instancename/xmlmc/"
         "CleanRequests": true,
         "RequestServices":[
                 1,
@@ -57,9 +54,6 @@ Example JSON File:
 }
 ```
 
-- UserName: This is the username which will be used to connect to your Hornbill instance. This user should have the appropriate roles associated to it, to be able to remove request and asset entity records.
-- Password: This is the password for the supplied username.
-- URL : This is the url of the API endpoint of your instance. It must be https, and include /xmlmc/ at the end of the url. You must replace "instancename" with the name of your Hornbill instance.
 - CleanRequests : Set to true to remove all Service Manager Requests (and related entity data) from a Hornbill instance. Filter the requests to be deleted using the following parameters:
   - RequestServices : An array containing Service ID Integers to filter the requests for deletion against. An empty array will remove the Service filter, meaning requests with any or no service associated will be deleted
   - RequestStatuses : An array containing Status strings to filter the requests for deletion against. An empty array will remove the Status filter, meaning requests at any status will be deleted
@@ -74,15 +68,21 @@ Example JSON File:
 ## Execute
 Command Line Parameters
 
+- instance
+This should be the ID of your instance
+
+- apikey
+This should be an API of a user on your instance that has the correct rights to perform the search & deletion of the specified records
+
 - file
 This should point to your json configration file and by default looks for a file in the current working directory called conf.json. If this is present you don't need to have the parameter.
 
-'hornbillCleaner_x64.exe -file=conf.json'
+'hornbillCleaner_x64.exe -instance=yourinstancename -apikey=yourapikey -file=conf.json'
 
 - blocksize
 This allows you to override the default number of records that should be retrieved and deleted as "blocks". The default is 3, and this should only need to be overridden if your Hornbill instance holds large amounts of records to delete, and you experience errors when running the utility.
 
-'hornbillCleaner_x64.exe -blocksize=1'
+'hornbillCleaner_x64.exe -instance=yourinstancename -apikey=yourapikey -blocksize=1'
 
 When you are ready to clear-down your request and/or asset records:
 
@@ -90,6 +90,6 @@ When you are ready to clear-down your request and/or asset records:
 - Open Command Line Prompt as Administrator;
 - Change Directory to the folder with hornbillCleaner_* executables 'C:\hornbill_cleaner\';
 - Run the command: 
-        - On 32 bit Windows PCs: hornbillCleaner_x86.exe
-        - On 64 bit Windows PCs: hornbillCleaner_x64.exe
+        - On 32 bit Windows PCs: hornbillCleaner_x86.exe -instance=yourinstancename -apikey=yourapikey
+        - On 64 bit Windows PCs: hornbillCleaner_x64.exe -instance=yourinstancename -apikey=yourapikey
 - Follow all on-screen prompts, taking careful note of all prompts and messages provided.

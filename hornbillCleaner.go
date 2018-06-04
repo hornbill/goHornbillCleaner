@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
 	"flag"
@@ -16,13 +15,15 @@ import (
 )
 
 const (
-	toolVer           = "1.3.0"
+	toolVer           = "1.4.0"
 	appServiceManager = "com.hornbill.servicemanager"
 )
 
 var (
 	cleanerConf     cleanerConfStruct
 	configFileName  string
+	configAPIKey    string
+	configInstance  string
 	configBlockSize string
 	maxResults      int
 	resetResults    bool
@@ -72,9 +73,6 @@ type workflowStruct struct {
 }
 
 type cleanerConfStruct struct {
-	UserName           string
-	Password           string
-	URL                string
 	CleanRequests      bool
 	RequestServices    []int
 	RequestStatuses    []string
@@ -91,6 +89,8 @@ func main() {
 
 	flag.StringVar(&configFileName, "file", "conf.json", "Name of Configuration File To Load")
 	flag.StringVar(&configBlockSize, "BlockSize", "3", "Number of records to delete per block")
+	flag.StringVar(&configAPIKey, "apikey", "", "API key to authenticate the session with")
+	flag.StringVar(&configInstance, "instance", "", "ID of the instance (case sensitive)")
 	flag.Parse()
 
 	BlockSize, err := strconv.Atoi(configBlockSize)
@@ -113,7 +113,7 @@ func main() {
 	fmt.Println("")
 	color.Red(" WARNING!")
 	color.Red(" This utility will delete all records from the following entities in")
-	color.Red(" Hornbill instance: " + cleanerConf.URL)
+	color.Red(" Hornbill instance: " + configInstance)
 	color.Red(" as specified in your configuration file: ")
 	fmt.Println("")
 	if cleanerConf.CleanRequests {
@@ -134,12 +134,7 @@ func main() {
 	if confirmDelete() != true {
 		return
 	}
-	//Try to login to the server if not succesfully exit
-	success := login()
-	if success != true {
-		log.Fatal("Could not login to your Hornbill instance.")
-	}
-	defer logout()
+
 	maxResults = getMaxRecordsSetting()
 
 	//Process Request Records
@@ -295,7 +290,8 @@ func getRecordCount(table string) int {
 			strQuery += " h_datelogged <= '" + cleanerConf.RequestLogDateTo + "'"
 		}
 	}
-
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("database", "swdata")
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("table", table)
@@ -326,6 +322,8 @@ func getRecordCount(table string) int {
 
 //getMaxRecordsSetting - gets and returns current maxResultsAllowed sys setting value
 func getMaxRecordsSetting() int {
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("filter", "api.xmlmc.queryExec.maxResultsAllowed")
 	browse, err := espXmlmc.Invoke("admin", "sysOptionGet")
 	if err != nil {
@@ -350,6 +348,8 @@ func getMaxRecordsSetting() int {
 
 //setMaxRecordsSetting - takes integer, updates maxResultsAllowed system setting to value
 func setMaxRecordsSetting(newMaxResults int) bool {
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.OpenElement("option")
 	espXmlmc.SetParam("key", "api.xmlmc.queryExec.maxResultsAllowed")
 	espXmlmc.SetParam("value", strconv.Itoa(newMaxResults))
@@ -417,6 +417,8 @@ func processEntityClean(entity string, chunkSize int) {
 
 //getRecordIDs - returns an array of records for deletion
 func getRecordIDs(entity string) []string {
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	if currentBlock <= totalBlocks {
 		fmt.Println("Returning block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " blocks of records from " + entity + " entity...")
 	} else {
@@ -561,6 +563,8 @@ func deleteRecords(entity string, records []string) {
 	}
 
 	//Now delete the block of records
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("entity", entity)
 	for _, v := range records {
@@ -590,7 +594,9 @@ func deleteRecords(entity string, records []string) {
 }
 
 func deleteUser(strUser string) {
-	//Now delete the block of records
+	//Now delete the user
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("userId", strUser)
 
 	deleted, err := espXmlmc.Invoke("admin", "userDelete")
@@ -618,6 +624,8 @@ func deleteUser(strUser string) {
 //getRequestTasks - take a call reference, get all associated request tasks
 func getRequestTasks(callRef string) map[string][]taskStruct {
 	//First get request task counters so we can set correct state
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("objectRefUrn", "urn:sys:entity:"+appServiceManager+":Requests:"+callRef)
 	espXmlmc.SetParam("counters", "true")
 	getCounters, err := espXmlmc.Invoke("apps/com.hornbill.core/Task", "getEntityTasks")
@@ -678,6 +686,8 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 
 func getRequestAssetLinks(callref string) []string {
 	//Use entityBrowseRecords to get asset entity records
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	callrefURN := "urn:sys:entity:com.hornbill.servicemanager:Requests:" + callref
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("entity", "AssetsLinks")
@@ -716,6 +726,8 @@ func getRequestAssetLinks(callref string) []string {
 //getRequestWorkflow - take a call reference, get all associated rBPM workflow ID
 func getRequestWorkflow(callRef string) string {
 	returnWorkflowID := ""
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("entity", "Requests")
 	espXmlmc.SetParam("keyValue", callRef)
@@ -744,6 +756,8 @@ func getRequestWorkflow(callRef string) string {
 //getSystemTimerIDs - take call reference, return array of System Timers that are associated with it
 func getSystemTimerIDs(callRef string) []string {
 	//Use a stored query to get request IDs
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("queryName", "getRequestSystemTimers")
 	espXmlmc.OpenElement("queryParams")
@@ -772,6 +786,8 @@ func getSystemTimerIDs(callRef string) []string {
 
 //deleteTimer - Takes a System Timer ID, sends it to time::timerDelete API for safe deletion
 func deleteTimer(timerID string) {
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("timerId", timerID)
 	browse, err := espXmlmc.Invoke("time", "timerDelete")
 	if err != nil {
@@ -796,6 +812,8 @@ func deleteTimer(timerID string) {
 
 //deleteTask - Takes a Task ID, sends it to task::taskDelete API for safe deletion
 func deleteTask(taskID string) {
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("taskId", taskID)
 	browse, err := espXmlmc.Invoke("task", "taskDelete")
 	if err != nil {
@@ -820,6 +838,8 @@ func deleteTask(taskID string) {
 
 //deleteWorkflow - Takes a Workflow ID, sends it to bpm::processDelete API for safe deletion
 func deleteWorkflow(workflowID string) {
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("identifier", workflowID)
 	browse, err := espXmlmc.Invoke("bpm", "processDelete")
 	if err != nil {
@@ -844,6 +864,8 @@ func deleteWorkflow(workflowID string) {
 
 //deleteAssetLink - Takes a Link PK ID, sends it to data::entityDelete API for safe deletion
 func deleteAssetLink(linkID string) {
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("entity", "AssetsLinks")
 	espXmlmc.SetParam("keyValue", linkID)
@@ -927,41 +949,11 @@ func confirmDelete() bool {
 
 // espLogger -- Log to ESP
 func espLogger(message string, severity string) {
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("fileName", "Hornbill_Clean")
 	espXmlmc.SetParam("group", "general")
 	espXmlmc.SetParam("severity", severity)
 	espXmlmc.SetParam("message", message)
 	espXmlmc.Invoke("system", "logMessage")
-}
-
-//login - Starts a new ESP session
-func login() bool {
-
-	espXmlmc = apiLib.NewXmlmcInstance(cleanerConf.URL)
-	espXmlmc.SetParam("userId", cleanerConf.UserName)
-	espXmlmc.SetParam("password", base64.StdEncoding.EncodeToString([]byte(cleanerConf.Password)))
-	XMLLogin, err := espXmlmc.Invoke("session", "userLogon")
-	if err != nil {
-		color.Red("Error returned when attempting to run Login API call.")
-		fmt.Println(err)
-		return false
-	}
-	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(XMLLogin), &xmlRespon)
-	if err != nil {
-		color.Red("Error returned when attempting to unmarshal Login API call response.")
-		fmt.Println(err)
-		return false
-	}
-	if xmlRespon.MethodResult != "ok" {
-		color.Red("Error returned when attempting to log in to your instance: " + xmlRespon.State.ErrorRet)
-		fmt.Println(xmlRespon)
-		return false
-	}
-	return true
-}
-
-//logout - Log out of ESP
-func logout() {
-	espXmlmc.Invoke("session", "userLogoff")
 }

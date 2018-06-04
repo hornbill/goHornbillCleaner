@@ -1,16 +1,6 @@
 {
-	"UserName":"Username goes here",
-	"Password":"Password goes here",
-	"URL": "https://eurapi.hornbill.com/instancename/xmlmc/",
-	"CleanRequests": false,
+	"CleanRequests": true,
 	"RequestServices":[
-		{
-			"ServiceID":"",
-			"CatalogItemIDs":[
-				"",
-				""
-			]
-		}
 	],
 	"RequestStatuses":[
 	],
@@ -20,7 +10,8 @@
 	],
 	"RequestLogDateFrom":"",
 	"RequestLogDateTo":"",
-	"CleanAssets": false,
-	"CleanUsers":false,
-	"Users":[]
+	"CleanAssets": true,
+	"CleanUsers":true,
+	"Users":[
+	]
 }
