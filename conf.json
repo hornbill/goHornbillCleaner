@@ -1,5 +1,5 @@
 {
-	"CleanRequests": true,
+	"CleanRequests": false,
 	"RequestServices":[
 	],
 	"RequestStatuses":[
@@ -10,8 +10,8 @@
 	],
 	"RequestLogDateFrom":"",
 	"RequestLogDateTo":"",
-	"CleanAssets": true,
-	"CleanUsers":true,
+	"CleanAssets": false,
+	"CleanUsers":false,
 	"Users":[
 	]
 }
