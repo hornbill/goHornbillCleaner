@@ -12,6 +12,5 @@
 	"RequestLogDateTo":"",
 	"CleanAssets": false,
 	"CleanUsers":false,
-	"Users":[
-	]
+	"Users":[]
 }

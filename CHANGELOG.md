@@ -1,3 +1,9 @@
+## 1.5.0 (September 9th, 2018)
+
+Features:
+  - Added support for supplying a duration string, as well as the existing hard-coded datetime string in the RequestLogDateFrom and RequestLogDateTo configuration parameters. This allows for the calculation of datetimes using the runtime datetime.
+  - General tidy-up of the code, split code in to separate Go files for ease of maintenance
+
 ## 1.4.0 (June 4th, 2018)
 
 Feature:

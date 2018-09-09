@@ -58,8 +58,18 @@ Example JSON File:
   - RequestServices : An array containing Service ID Integers to filter the requests for deletion against. An empty array will remove the Service filter, meaning requests with any or no service associated will be deleted
   - RequestStatuses : An array containing Status strings to filter the requests for deletion against. An empty array will remove the Status filter, meaning requests at any status will be deleted
   - RequestTypes : An array containing Request Type strings to filter the requests for deletion against. An empty array will remove the Type filter, meaning requests of any Type will be deleted
-  - RequestLogDateFrom : A date string to filter requests against log date (requests logged after or equal to this date/time), in the format YYYY-MM-DD HH:MM:SS. An empty string will remove the Logged After filter. 
-  - RequestLogDateTo : A date string to filter requests against log date (requests logged before or equal to this date/time), in the format YYYY-MM-DD HH:MM:SS. An empty string will remove the Logged Before filter. 
+  - RequestLogDateFrom :  A date to filter requests against log date (requests logged after or equal to this date/time). Can take one of the following values:
+        - An empty string will remove the Logged From filter. 
+        - A date string in the format YYYY-MM-DD HH:MM:SS. 
+        - A duration string, to calculate a new datetime from the current datetime:
+                - Example: -P1D2H3M4S - This will subtract 1 day (1D), 2 hours (2H), 3 minutes (3H) and 4 seconds (4S) from the current date & time.
+                - See the CalculateTimeDuration function documentation in https://github.com/hornbill/goHornbillHelpers for more details
+  - RequestLogDateTo : A date to filter requests against log date (requests logged before or equal to this date/time). Can take one of the following values:
+        - An empty string will remove the Logged Before filter. 
+        - A date string in the format YYYY-MM-DD HH:MM:SS. 
+        - A duration string, to calculate a new datetime from the current datetime:
+                - Example: -P1D2H3M4S - This will subtract 1 day (1D), 2 hours (2H), 3 minutes (3H) and 4 seconds (4S) from the current date & time.
+                - See the CalculateTimeDuration function documentation in https://github.com/hornbill/goHornbillHelpers for more details
   - RequestReferences : An array of Request References to delete. If requests are defined in this array, then ONLY these requests will be deleted. The other parameters above will be ignored. In the example above, requests with reference CHR00000021 and INC00000003 would be deleted, and no other requests would be removed.
 - CleanAssets : Set to true to remove all Assets (and related entity data) from a Hornbill instance 
 - CleanUsers : Set to true to remove all Users listed in the Users array
