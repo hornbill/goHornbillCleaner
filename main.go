@@ -19,6 +19,13 @@ func main() {
 
 	parseFlags()
 
+	//Does endpoint exist?
+	instanceEndpoint := apiLib.GetEndPointFromName(configInstance)
+	if instanceEndpoint == "" {
+		color.Red("The provided instance ID [" + configInstance + "] could not be found.")
+		return
+	}
+
 	//Load the configuration file
 	cleanerConf = loadConfig()
 
@@ -53,6 +60,10 @@ func main() {
 	if hornbillHelpers.ConfirmResponse("delete") != true {
 		return
 	}
+
+	//Create new session
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
 
 	maxResults = getMaxRecordsSetting()
 
@@ -164,8 +175,6 @@ func parseFlags() {
 
 //setMaxRecordsSetting - takes integer, updates maxResultsAllowed system setting to value
 func setMaxRecordsSetting(newMaxResults int) bool {
-	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
-	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.OpenElement("option")
 	espXmlmc.SetParam("key", "api.xmlmc.queryExec.maxResultsAllowed")
 	espXmlmc.SetParam("value", strconv.Itoa(newMaxResults))
@@ -254,8 +263,6 @@ func loadConfig() cleanerConfStruct {
 
 // espLogger -- Log to ESP
 func espLogger(message string, severity string) {
-	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
-	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("fileName", "Hornbill_Clean")
 	espXmlmc.SetParam("group", "general")
 	espXmlmc.SetParam("severity", severity)

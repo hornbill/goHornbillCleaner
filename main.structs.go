@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	toolVer           = "1.5.0"
+	toolVer           = "1.5.1"
 	appServiceManager = "com.hornbill.servicemanager"
 	datetimeFormat    = "2006-01-02 15:04:05"
 )

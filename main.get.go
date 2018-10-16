@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/hornbill/color"
-	"github.com/hornbill/goApiLib"
 	"github.com/hornbill/goHornbillHelpers"
 )
 
@@ -87,8 +86,6 @@ func getRecordCount(table string) int {
 			strQuery += " h_datelogged <= '" + logDateTo + "'"
 		}
 	}
-	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
-	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("database", "swdata")
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("table", table)
@@ -119,8 +116,6 @@ func getRecordCount(table string) int {
 
 //getMaxRecordsSetting - gets and returns current maxResultsAllowed sys setting value
 func getMaxRecordsSetting() int {
-	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
-	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("filter", "api.xmlmc.queryExec.maxResultsAllowed")
 	browse, err := espXmlmc.Invoke("admin", "sysOptionGet")
 	if err != nil {
@@ -145,8 +140,6 @@ func getMaxRecordsSetting() int {
 
 //getRecordIDs - returns an array of records for deletion
 func getRecordIDs(entity string) []string {
-	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
-	espXmlmc.SetAPIKey(configAPIKey)
 	if currentBlock <= totalBlocks {
 		fmt.Println("Returning block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " blocks of records from " + entity + " entity...")
 	} else {
@@ -262,8 +255,6 @@ func getRecordIDs(entity string) []string {
 //getRequestTasks - take a call reference, get all associated request tasks
 func getRequestTasks(callRef string) map[string][]taskStruct {
 	//First get request task counters so we can set correct state
-	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
-	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("objectRefUrn", "urn:sys:entity:"+appServiceManager+":Requests:"+callRef)
 	espXmlmc.SetParam("counters", "true")
 	getCounters, err := espXmlmc.Invoke("apps/com.hornbill.core/Task", "getEntityTasks")
@@ -324,8 +315,6 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 
 func getRequestAssetLinks(callref string) []string {
 	//Use entityBrowseRecords to get asset entity records
-	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
-	espXmlmc.SetAPIKey(configAPIKey)
 	callrefURN := "urn:sys:entity:com.hornbill.servicemanager:Requests:" + callref
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("entity", "AssetsLinks")
@@ -364,8 +353,6 @@ func getRequestAssetLinks(callref string) []string {
 //getRequestWorkflow - take a call reference, get all associated rBPM workflow ID
 func getRequestWorkflow(callRef string) string {
 	returnWorkflowID := ""
-	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
-	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("entity", "Requests")
 	espXmlmc.SetParam("keyValue", callRef)
@@ -394,8 +381,6 @@ func getRequestWorkflow(callRef string) string {
 //getSystemTimerIDs - take call reference, return array of System Timers that are associated with it
 func getSystemTimerIDs(callRef string) []string {
 	//Use a stored query to get request IDs
-	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
-	espXmlmc.SetAPIKey(configAPIKey)
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("queryName", "getRequestSystemTimers")
 	espXmlmc.OpenElement("queryParams")
