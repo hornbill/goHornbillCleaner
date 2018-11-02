@@ -406,3 +406,58 @@ func getSystemTimerIDs(callRef string) []string {
 	}
 	return xmlRespon.Params.TimerIDs
 }
+
+func getAppList() ([]appsStruct, bool) {
+	var returnArray []appsStruct
+	returnBool := false
+	apps, err := espXmlmc.Invoke("admin", "getApplicationList")
+	if err != nil {
+		espLogger("Call to admin::getApplicationList error: "+fmt.Sprintf("%v", err), "error")
+		color.Red("Call to admin::getApplicationList error:", err)
+		return returnArray, returnBool
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(apps), &xmlRespon)
+	if err != nil {
+		espLogger("Unmarshal of admin::getApplicationList response error: "+fmt.Sprintf("%v", err), "error")
+		color.Red("Unmarshal of admin::getApplicationList response error:", err)
+		return returnArray, returnBool
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("Response from admin::getApplicationList not ok: "+xmlRespon.State.ErrorRet, "error")
+		color.Red("Response from admin::getApplicationList not ok:", xmlRespon.State.ErrorRet)
+		return returnArray, returnBool
+	}
+
+	return xmlRespon.Params.Application, true
+}
+
+func getRequestCards(callref string) []string {
+	//Use entityBrowseRecords to get asset entity records
+	espXmlmc.SetParam("application", "com.hornbill.boardmanager")
+	espXmlmc.SetParam("entity", "Card")
+	espXmlmc.OpenElement("searchFilter")
+	espXmlmc.SetParam("column", "h_key")
+	espXmlmc.SetParam("value", callref)
+	espXmlmc.SetParam("matchType", "exact")
+	espXmlmc.CloseElement("searchFilter")
+	browse, err := espXmlmc.Invoke("data", "entityBrowseRecords2")
+	if err != nil {
+		espLogger("Call to entityBrowseRecords2 failed when returning Card IDs for "+callref, "error")
+		color.Red("Call to entityBrowseRecords2 failed when returning Card IDs for " + callref)
+		return nil
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	if err != nil {
+		espLogger("Unmarshal of entityBrowseRecords2 failed when returning Card IDs for "+callref, "error")
+		color.Red("Unmarshal of entityBrowseRecords2 failed when returning Card IDs for " + callref)
+		return nil
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("entityBrowseRecords2 was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
+		color.Red("entityBrowseRecords2 was unsuccessful: " + xmlRespon.State.ErrorRet)
+		return nil
+	}
+	return xmlRespon.Params.CardIDs
+}

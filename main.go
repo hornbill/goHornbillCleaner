@@ -81,10 +81,26 @@ func main() {
 	}
 }
 
+func isAppInstalled(appName string, buildVer int) bool {
+	apps, success := getAppList()
+	if success {
+		for _, v := range apps {
+			if v.Name == appName && v.Build >= buildVer {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func processRequests() {
 	//Process Request Records
 	espLogger("System Setting Max Results: "+strconv.Itoa(maxResults), "debug")
+
 	if cleanerConf.CleanRequests {
+		//Is Board Manager installed
+		boardManagerInstalled = isAppInstalled("com.hornbill.boardmanager", minBoardManagerBuild)
+
 		requestCount := 0
 		if len(cleanerConf.RequestReferences) > 0 {
 			currentBlock = 1
@@ -203,7 +219,7 @@ func setMaxRecordsSetting(newMaxResults int) bool {
 
 //processEntityClean - iterates through and processes record blocks of size defined in flag configBlockSize
 func processEntityClean(entity string, chunkSize int) {
-	if len(cleanerConf.RequestReferences) > 0 {
+	if len(cleanerConf.RequestReferences) > 0 && entity == "Requests" {
 
 		//Split request slice in to chunks
 		var divided [][]string

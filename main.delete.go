@@ -48,13 +48,25 @@ func deleteRecords(entity string, records []string) {
 				}
 			}
 
+			//Board Manager Cards
+			if boardManagerInstalled {
+				requestCards := getRequestCards(callRef)
+				for _, cardID := range requestCards {
+					if cardID != "<nil>" && cardID != "" {
+						deleteCard(cardID)
+					}
+				}
+			}
+
 		}
 	}
 
 	//Now delete the block of records
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("entity", entity)
+	var idsToDelete []string
 	for _, v := range records {
+		idsToDelete = append(idsToDelete, v)
 		espXmlmc.SetParam("keyValue", v)
 	}
 	deleted, err := espXmlmc.Invoke("data", "entityDeleteRecord")
@@ -74,6 +86,9 @@ func deleteRecords(entity string, records []string) {
 		espLogger("entityDeleteRecords was unsuccessful for entity ["+entity+"]: "+xmlRespon.State.ErrorRet, "error")
 		color.Red("Could not delete records from " + entity + " entity: " + xmlRespon.State.ErrorRet)
 		return
+	}
+	for _, val := range idsToDelete {
+		espLogger("["+val+"] deleted from "+entity+" entity", "debug")
 	}
 	color.Green("Block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " deleted.")
 	currentBlock++
@@ -102,6 +117,7 @@ func deleteUser(strUser string) {
 		color.Red("Could not delete user [" + strUser + "]: " + xmlRespon.State.ErrorRet)
 		return
 	}
+	espLogger("User ["+strUser+"] deleted.", "debug")
 	color.Green("User [" + strUser + "] deleted.")
 	return
 }
@@ -204,4 +220,29 @@ func deleteAssetLink(linkID string) {
 		return
 	}
 	espLogger("Asset Link sucessfully deleted ["+linkID+"] ", "debug")
+}
+
+//deleteCard - Takes a Card PK ID, sends it to data::entityDelete API for safe deletion
+func deleteCard(cardID string) {
+	espXmlmc.SetParam("h_card_id", cardID)
+	espXmlmc.SetParam("hardDelete", "true")
+	browse, err := espXmlmc.Invoke("apps/com.hornbill.boardmanager/Card", "removeCard")
+	if err != nil {
+		espLogger("Deletion of Card failed ["+cardID+"]", "error")
+		color.Red("Deletion of Card failed [" + cardID + "]")
+		return
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	if err != nil {
+		espLogger("Unmarshal of response to deletion of Card failed ["+cardID+"]", "error")
+		color.Red("Unmarshal of response to deletion of Card failed [" + cardID + "]")
+		return
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("API Call to delete Card failed ["+cardID+"] "+xmlRespon.State.ErrorRet, "error")
+		color.Red("API Call to delete Card failed [" + cardID + "] " + xmlRespon.State.ErrorRet)
+		return
+	}
+	espLogger("Card sucessfully deleted ["+cardID+"] ", "debug")
 }
