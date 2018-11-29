@@ -139,7 +139,7 @@ func getMaxRecordsSetting() int {
 }
 
 //getRecordIDs - returns an array of records for deletion
-func getRecordIDs(entity string) []string {
+func getRecordIDs(entity string) []dataStruct {
 	if currentBlock <= totalBlocks {
 		fmt.Println("Returning block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " blocks of records from " + entity + " entity...")
 	} else {
@@ -152,6 +152,13 @@ func getRecordIDs(entity string) []string {
 		espXmlmc.OpenElement("queryParams")
 		for _, reqType := range cleanerConf.RequestTypes {
 			espXmlmc.SetParam("type", reqType)
+		}
+		if configDryRun {
+			if currentBlock == 1 {
+				espXmlmc.SetParam("rowstart", "0")
+			} else {
+				espXmlmc.SetParam("rowstart", strconv.Itoa((configBlockSize*currentBlock)-1))
+			}
 		}
 		espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
 		for _, reqStatus := range cleanerConf.RequestStatuses {
@@ -198,33 +205,45 @@ func getRecordIDs(entity string) []string {
 			color.Red("queryExec was unsuccessful: " + xmlRespon.State.ErrorRet)
 			return nil
 		}
-		return xmlRespon.Params.RequestIDs
+		return xmlRespon.Params.RecordIDs
 	}
 
 	if entity == "Asset" {
-		//Use entityBrowseRecords to get asset entity records
+		//Use a stored query to get asset IDs
 		espXmlmc.SetParam("application", "com.hornbill.servicemanager")
-		espXmlmc.SetParam("entity", entity)
-		espXmlmc.SetParam("maxResults", strconv.Itoa(configBlockSize))
-		browse, err := espXmlmc.Invoke("data", "entityBrowseRecords")
+		espXmlmc.SetParam("queryName", "getAssetsList")
+		espXmlmc.OpenElement("queryParams")
+		if configDryRun {
+			if currentBlock == 1 {
+				espXmlmc.SetParam("rowstart", "0")
+			} else {
+				espXmlmc.SetParam("rowstart", strconv.Itoa((configBlockSize*currentBlock)-1))
+			}
+		}
+		espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
+		espXmlmc.CloseElement("queryParams")
+		espXmlmc.OpenElement("queryOptions")
+		espXmlmc.SetParam("queryType", "records")
+		espXmlmc.CloseElement("queryOptions")
+		browse, err := espXmlmc.Invoke("data", "queryExec")
 		if err != nil {
-			espLogger("Call to entityBrowseRecords ["+entity+"] failed when returning block "+strconv.Itoa(currentBlock), "error")
-			color.Red("Call to entityBrowseRecords [" + entity + "] failed when returning block " + strconv.Itoa(currentBlock))
+			espLogger("Call to queryExec ["+entity+"] failed when returning block "+strconv.Itoa(currentBlock), "error")
+			color.Red("Call to queryExec [" + entity + "] failed when returning block " + strconv.Itoa(currentBlock))
 			return nil
 		}
 		var xmlRespon xmlmcResponse
 		err = xml.Unmarshal([]byte(browse), &xmlRespon)
 		if err != nil {
-			espLogger("Unmarshal of entityBrowseRecords ["+entity+"] data failed when returning block "+strconv.Itoa(currentBlock), "error")
-			color.Red("Unmarshal of entityBrowseRecords [" + entity + "] data failed when returning block " + strconv.Itoa(currentBlock))
+			espLogger("Unmarshal of queryExec ["+entity+"] data failed when returning block "+strconv.Itoa(currentBlock), "error")
+			color.Red("Unmarshal of queryExec [" + entity + "] data failed when returning block " + strconv.Itoa(currentBlock))
 			return nil
 		}
 		if xmlRespon.MethodResult != "ok" {
-			espLogger("entityBrowseRecords was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
-			color.Red("entityBrowseRecords was unsuccessful: " + xmlRespon.State.ErrorRet)
+			espLogger("queryExec was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
+			color.Red("queryExec was unsuccessful: " + xmlRespon.State.ErrorRet)
 			return nil
 		}
-		return xmlRespon.Params.AssetIDs
+		return xmlRespon.Params.RecordIDs
 	}
 
 	//Use entityBrowseRecords to get assetslinks entity records
@@ -249,7 +268,7 @@ func getRecordIDs(entity string) []string {
 		color.Red("entityBrowseRecords was unsuccessful: " + xmlRespon.State.ErrorRet)
 		return nil
 	}
-	return xmlRespon.Params.AssetLinkIDs
+	return xmlRespon.Params.RecordIDs
 }
 
 //getRequestTasks - take a call reference, get all associated request tasks
@@ -313,7 +332,7 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 	return nil
 }
 
-func getRequestAssetLinks(callref string) []string {
+func getRequestAssetLinks(callref string) []dataStruct {
 	//Use entityBrowseRecords to get asset entity records
 	callrefURN := "urn:sys:entity:com.hornbill.servicemanager:Requests:" + callref
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
@@ -347,7 +366,7 @@ func getRequestAssetLinks(callref string) []string {
 		color.Red("entityBrowseRecords2 was unsuccessful: " + xmlRespon.State.ErrorRet)
 		return nil
 	}
-	return xmlRespon.Params.AssetLinkIDs
+	return xmlRespon.Params.RecordIDs
 }
 
 //getRequestWorkflow - take a call reference, get all associated rBPM workflow ID
@@ -379,7 +398,7 @@ func getRequestWorkflow(callRef string) string {
 }
 
 //getSystemTimerIDs - take call reference, return array of System Timers that are associated with it
-func getSystemTimerIDs(callRef string) []string {
+func getSystemTimerIDs(callRef string) []dataStruct {
 	//Use a stored query to get request IDs
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("queryName", "getRequestSystemTimers")
@@ -404,7 +423,7 @@ func getSystemTimerIDs(callRef string) []string {
 		color.Red("queryExec [getRequestSystemTimers] was unsuccessful: " + xmlRespon.State.ErrorRet)
 		return nil
 	}
-	return xmlRespon.Params.TimerIDs
+	return xmlRespon.Params.RecordIDs
 }
 
 func getAppList() ([]appsStruct, bool) {
@@ -432,7 +451,7 @@ func getAppList() ([]appsStruct, bool) {
 	return xmlRespon.Params.Application, true
 }
 
-func getRequestCards(callref string) []string {
+func getRequestCards(callref string) []dataStruct {
 	//Use entityBrowseRecords to get asset entity records
 	espXmlmc.SetParam("application", "com.hornbill.boardmanager")
 	espXmlmc.SetParam("entity", "Card")
@@ -459,5 +478,5 @@ func getRequestCards(callref string) []string {
 		color.Red("entityBrowseRecords2 was unsuccessful: " + xmlRespon.State.ErrorRet)
 		return nil
 	}
-	return xmlRespon.Params.CardIDs
+	return xmlRespon.Params.RecordIDs
 }

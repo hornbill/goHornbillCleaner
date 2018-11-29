@@ -9,15 +9,20 @@ import (
 	"math"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/hornbill/color"
 	"github.com/hornbill/goApiLib"
 	"github.com/hornbill/goHornbillHelpers"
 )
 
-func main() {
+var (
+	logTimeNow string
+)
 
+func main() {
 	parseFlags()
+	logTimeNow = time.Now().Format("20060102150405.999999")
 
 	//Does endpoint exist?
 	instanceEndpoint := apiLib.GetEndPointFromName(configInstance)
@@ -26,8 +31,15 @@ func main() {
 		return
 	}
 
+	//Create new session
+	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
+	espXmlmc.SetAPIKey(configAPIKey)
+
 	//Load the configuration file
 	cleanerConf = loadConfig()
+
+	espLogger("********** Cleaner Utility Started **********", "notice")
+	defer espLogger("********** Cleaner Utility Completed **********", "notice")
 
 	//Ask if we want to delete before continuing
 	fmt.Println("")
@@ -37,10 +49,18 @@ func main() {
 		return
 	}
 	fmt.Println("")
-	color.Red(" WARNING!")
-	color.Red(" This utility will delete all records from the following entities in")
-	color.Red(" Hornbill instance: " + configInstance)
-	color.Red(" as specified in your configuration file: ")
+	if configDryRun {
+		color.Green(" Hornbill instance: " + configInstance)
+		color.Green(" DryRun Mode Active. No records will be deleted.")
+		color.Green(" This utility will output to the log a list of all records that would have be deleted")
+		color.Green(" as specified in your configuration file: ")
+	} else {
+		color.Red(" Hornbill instance: " + configInstance)
+		color.Red(" WARNING!")
+		color.Red(" This utility will attempt to delete records from the following entities")
+		color.Red(" as specified in your configuration file: ")
+	}
+
 	fmt.Println("")
 	if cleanerConf.CleanRequests {
 		color.Magenta(" * Requests (and related data)")
@@ -49,21 +69,26 @@ func main() {
 		color.Magenta(" * All Assets (and related data)")
 	}
 	if cleanerConf.CleanUsers {
-		color.Magenta(" * All Specified Users (and related data)")
+		color.Magenta(" * Specified Users (and related data)")
 	}
 	fmt.Println("")
-	fmt.Println("Are you sure you want to permanently delete these records? (yes/no):")
-	if hornbillHelpers.ConfirmResponse("") != true {
-		return
-	}
-	color.Red("Are you absolutely sure? Type in the word 'delete' to confirm...")
-	if hornbillHelpers.ConfirmResponse("delete") != true {
-		return
+
+	if !configSkipPrompts {
+		fmt.Println("Are you sure you want to permanently delete these records? (yes/no):")
+		if hornbillHelpers.ConfirmResponse("") != true {
+			return
+		}
+		color.Red("Are you absolutely sure? Type in the word 'delete' to confirm...")
+		if hornbillHelpers.ConfirmResponse("delete") != true {
+			return
+		}
+		espLogger("Confirmation Prompts Accepted", "info")
+	} else {
+		espLogger("Confirmation Prompts Skipped", "info")
 	}
 
-	//Create new session
-	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
-	espXmlmc.SetAPIKey(configAPIKey)
+	//Log the config
+	logConfig()
 
 	maxResults = getMaxRecordsSetting()
 
@@ -71,13 +96,77 @@ func main() {
 	processAssets()
 
 	if cleanerConf.CleanUsers {
+		espLogger("[USERS] Attempting to delete "+strconv.Itoa(len(cleanerConf.Users))+" Users", "info")
+
 		for _, v := range cleanerConf.Users {
-			deleteUser(v)
+			espLogger("[USER] "+v, "info")
+			if !configDryRun {
+				deleteUser(v)
+			}
+
 		}
 	}
 	//Reset maxResultsAllowed system setting back to what it was before the process ran
-	if resetResults {
+	if resetResults && !configDryRun {
 		setMaxRecordsSetting(maxResults)
+	}
+}
+
+func logConfig() {
+	espLogger("Config File Name: "+configFileName, "info")
+	espLogger("Dry Run: "+fmt.Sprintf("%t", configDryRun), "info")
+	espLogger("Skip Prompts: "+fmt.Sprintf("%t", configSkipPrompts), "info")
+
+	espLogger("CleanRequests: "+fmt.Sprintf("%t", cleanerConf.CleanRequests), "info")
+	if cleanerConf.CleanRequests {
+		noFilters := true
+		if len(cleanerConf.RequestServices) > 0 {
+			noFilters = false
+			espLogger("Filtered by Service ID(s)", "info")
+			for _, v := range cleanerConf.RequestServices {
+				espLogger("Service ID: "+strconv.Itoa(v), "info")
+			}
+		}
+		if len(cleanerConf.RequestStatuses) > 0 {
+			noFilters = false
+			espLogger("Filtered by Request Status(es)", "info")
+			for _, v := range cleanerConf.RequestStatuses {
+				espLogger("Request Status: "+v, "info")
+			}
+		}
+		if len(cleanerConf.RequestTypes) > 0 {
+			noFilters = false
+			espLogger("Filtered by Request Type(s)", "info")
+			for _, v := range cleanerConf.RequestTypes {
+				espLogger("Request Type: "+v, "info")
+			}
+		}
+		if len(cleanerConf.RequestReferences) > 0 {
+			noFilters = false
+			espLogger("Filtered by Request Reference(s)", "info")
+			for _, v := range cleanerConf.RequestReferences {
+				espLogger("Request Reference: "+v, "info")
+			}
+		}
+		if cleanerConf.RequestLogDateFrom != "" {
+			noFilters = false
+			espLogger("Filtered by RequestLogDateFrom: "+cleanerConf.RequestLogDateFrom, "info")
+		}
+		if cleanerConf.RequestLogDateTo != "" {
+			noFilters = false
+			espLogger("Filtered by RequestLogDateTo: "+cleanerConf.RequestLogDateTo, "info")
+		}
+		if noFilters {
+			espLogger("No Request filters specified, all Requests and associated data will be deleted.", "warn")
+		}
+	}
+
+	espLogger("CleanAssets: "+fmt.Sprintf("%t", cleanerConf.CleanAssets), "info")
+	espLogger("CleanUsers: "+fmt.Sprintf("%t", cleanerConf.CleanUsers), "info")
+	if cleanerConf.CleanUsers {
+		for _, v := range cleanerConf.Users {
+			espLogger("User ID: "+v, "info")
+		}
 	}
 }
 
@@ -109,14 +198,19 @@ func processRequests() {
 			requestBlocks := float64(requestCount) / float64(configBlockSize)
 			totalBlocks = int(math.Ceil(requestBlocks))
 
-			espLogger("Number of Requests to delete: "+strconv.Itoa(requestCount), "debug")
-			color.Green("Number of Requests to delete: " + strconv.Itoa(requestCount))
-			if maxResults > 0 && requestCount > maxResults {
-				resetResults = true
-				//Update maxResultsAllowed system setting to match number of records to be deleted
-				setMaxRecordsSetting(requestCount)
+			if !configDryRun {
+				espLogger("Number of Requests to delete: "+strconv.Itoa(requestCount), "debug")
+				color.Green("Number of Requests to delete: " + strconv.Itoa(requestCount))
+				if maxResults > 0 && requestCount > maxResults {
+					resetResults = true
+					//Update maxResultsAllowed system setting to match number of records to be deleted
+					setMaxRecordsSetting(requestCount)
+				}
+				processEntityClean("Requests", configBlockSize)
+			} else {
+				//output to log
 			}
-			processEntityClean("Requests", configBlockSize)
+
 		} else {
 			requestCount = getRecordCount("h_itsm_requests")
 			if requestCount > 0 {
@@ -162,21 +256,23 @@ func processAssets() {
 			color.Red("There are no assets to delete.")
 		}
 
-		assetLinkCount := getRecordCount("h_cmdb_links")
-		if assetLinkCount > 0 {
-			currentBlock = 1
-			assetLinkBlocks := float64(assetLinkCount) / float64(configBlockSize)
-			totalBlocks = int(math.Ceil(assetLinkBlocks))
-			espLogger("Number of Asset Links to delete: "+strconv.Itoa(assetLinkCount), "debug")
-			if maxResults > 0 && assetLinkCount > maxResults {
-				resetResults = true
-				//Update maxResultsAllowed system setting to match number of records to be deleted
-				setMaxRecordsSetting(assetLinkCount)
+		if !configDryRun {
+			assetLinkCount := getRecordCount("h_cmdb_links")
+			if assetLinkCount > 0 {
+				currentBlock = 1
+				assetLinkBlocks := float64(assetLinkCount) / float64(configBlockSize)
+				totalBlocks = int(math.Ceil(assetLinkBlocks))
+				espLogger("Number of Asset Links to delete: "+strconv.Itoa(assetLinkCount), "debug")
+				if maxResults > 0 && assetLinkCount > maxResults {
+					resetResults = true
+					//Update maxResultsAllowed system setting to match number of records to be deleted
+					setMaxRecordsSetting(assetLinkCount)
+				}
+				processEntityClean("AssetsLinks", configBlockSize)
+			} else {
+				espLogger("There are no asset links to delete.", "debug")
+				color.Red("There are no asset links to delete.")
 			}
-			processEntityClean("AssetsLinks", configBlockSize)
-		} else {
-			espLogger("There are no asset links to delete.", "debug")
-			color.Red("There are no asset links to delete.")
 		}
 	}
 }
@@ -186,6 +282,8 @@ func parseFlags() {
 	flag.IntVar(&configBlockSize, "BlockSize", 3, "Number of records to delete per block")
 	flag.StringVar(&configAPIKey, "apikey", "", "API key to authenticate the session with")
 	flag.StringVar(&configInstance, "instance", "", "ID of the instance (case sensitive)")
+	flag.BoolVar(&configDryRun, "dryrun", false, "DryRun mode - outputs record keys to log for review without deleting anything")
+	flag.BoolVar(&configSkipPrompts, "justrun", false, "Set to true to run the cleanup without the prompts")
 	flag.Parse()
 }
 
@@ -230,7 +328,11 @@ func processEntityClean(entity string, chunkSize int) {
 		//range through slice, delete request chunks
 		for _, block := range divided {
 			//fmt.Println(block)
-			deleteRecords(entity, block)
+			var requestDataToStruct []dataStruct
+			for _, v := range block {
+				requestDataToStruct = append(requestDataToStruct, dataStruct{RequestID: v})
+			}
+			deleteRecords(entity, requestDataToStruct)
 		}
 
 	} else {
@@ -279,9 +381,43 @@ func loadConfig() cleanerConfStruct {
 
 // espLogger -- Log to ESP
 func espLogger(message string, severity string) {
-	espXmlmc.SetParam("fileName", "Hornbill_Clean")
+	if configDryRun == true {
+		message = "[DRYRUN] " + message
+	}
+	espXmlmc.SetParam("fileName", "HornbillCleanerUtility")
 	espXmlmc.SetParam("group", "general")
 	espXmlmc.SetParam("severity", severity)
 	espXmlmc.SetParam("message", message)
 	espXmlmc.Invoke("system", "logMessage")
+
+	logger(message)
+}
+
+// logger -- function to append to the current log file
+func logger(s string) {
+	cwd, _ := os.Getwd()
+	logPath := cwd + "/log"
+	logFileName := logPath + "/HornbillCleaner_" + logTimeNow + ".log"
+
+	//-- If Folder Does Not Exist then create it
+	if _, err := os.Stat(logPath); os.IsNotExist(err) {
+		err := os.Mkdir(logPath, 0777)
+		if err != nil {
+			color.Red("Error Creating Log Folder %q: %s \r", logPath, err)
+			os.Exit(101)
+		}
+	}
+
+	//-- Open Log File
+	f, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0777)
+	// don't forget to close it
+	defer f.Close()
+	if err != nil {
+		color.Red("Error Creating Log File %q: %s \n", logFileName, err)
+		os.Exit(100)
+	}
+	// assign the file to the standard logger
+	log.SetOutput(f)
+	//Write the log entry
+	log.Println(s)
 }

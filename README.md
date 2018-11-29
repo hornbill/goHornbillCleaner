@@ -92,6 +92,12 @@ This should point to your json configration file and by default looks for a file
 - blocksize
 This allows you to override the default number of records that should be retrieved and deleted as "blocks". The default is 3, and this should only need to be overridden if your Hornbill instance holds large amounts of records to delete, and you experience errors when running the utility.
 
+- dryrun
+Requires Service Manager build >= 1392 to work with request data. This boolean flag allows a "dry run" to be performed - the tool identifies the primary key for all parent records that would have been deleted, and outputs them to the log file without deleting any records. Defaults to false.
+
+- justrun
+This boolean flag allows you to skip the confirmation prompts when the tool is run. This allows the tool to be scheduled, with the correct configuration defined to delete request records over a certain age for example. Defaults to false.
+
 'hornbillCleaner_x64.exe -instance=yourinstancename -apikey=yourapikey -blocksize=1'
 
 When you are ready to clear-down your request and/or asset records:
@@ -101,5 +107,5 @@ When you are ready to clear-down your request and/or asset records:
 - Change Directory to the folder with hornbillCleaner_* executables 'C:\hornbill_cleaner\';
 - Run the command: 
         - On 32 bit Windows PCs: hornbillCleaner_x86.exe -instance=yourinstancename -apikey=yourapikey
-        - On 64 bit Windows PCs: hornbillCleaner_x64.exe -instance=yourinstancename -apikey=yourapikey
+        - On 64 bit Windows PCs: hornbillCleaner_x64.exe -instance=yourinstancename -apikey=yourapikey -dryrun=true
 - Follow all on-screen prompts, taking careful note of all prompts and messages provided.

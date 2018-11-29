@@ -1,11 +1,8 @@
 {
 	"CleanRequests": false,
-	"RequestServices":[
-	],
-	"RequestStatuses":[
-	],
-	"RequestTypes":[
-	],
+	"RequestServices":[],
+	"RequestStatuses":[],
+	"RequestTypes":[],
 	"RequestReferences":[
 	],
 	"RequestLogDateFrom":"",

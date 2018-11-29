@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	toolVer              = "1.6.0"
+	toolVer              = "1.7.0"
 	appServiceManager    = "com.hornbill.servicemanager"
 	datetimeFormat       = "2006-01-02 15:04:05"
 	minBoardManagerBuild = 100
@@ -20,6 +20,8 @@ var (
 	configAPIKey          string
 	configInstance        string
 	configBlockSize       int
+	configDryRun          bool
+	configSkipPrompts     bool
 	durationRegex         = regexp.MustCompile(`P[0-9]*D[0-9]*H[0-9]*M[0-9]*S`)
 	maxResults            int
 	resetResults          bool
@@ -47,16 +49,22 @@ type stateStruct struct {
 }
 
 type paramsStruct struct {
-	SessionID    string       `xml:"sessionId"`
-	RequestIDs   []string     `xml:"rowData>row>h_pk_reference"`
-	AssetIDs     []string     `xml:"rowData>row>h_pk_asset_id"`
-	AssetLinkIDs []string     `xml:"rowData>row>h_pk_id"`
-	CardIDs      []string     `xml:"rowData>row>h_id"`
-	TimerIDs     []string     `xml:"rowData>row>h_pk_tid"`
-	BPMID        string       `xml:"primaryEntityData>record>h_bpm_id"`
-	RecordCount  int          `xml:"count"`
-	MaxResults   int          `xml:"option>value"`
-	Application  []appsStruct `xml:"application"`
+	SessionID   string       `xml:"sessionId"`
+	RecordIDs   []dataStruct `xml:"rowData>row"`
+	BPMID       string       `xml:"primaryEntityData>record>h_bpm_id"`
+	RecordCount int          `xml:"count"`
+	MaxResults  int          `xml:"option>value"`
+	Application []appsStruct `xml:"application"`
+}
+
+type dataStruct struct {
+	RequestID   string `xml:"h_pk_reference"`
+	LogDate     string `xml:"h_datelogged"`
+	AssetID     string `xml:"h_pk_asset_id"`
+	AssetName   string `xml:"asset_name"`
+	AssetLinkID string `xml:"h_pk_id"`
+	CardID      string `xml:"rowData>row>h_id"`
+	TimerID     string `xml:"rowData>row>h_pk_tid"`
 }
 
 type taskStruct struct {

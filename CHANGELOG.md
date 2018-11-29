@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 1.7.0 (November 29th, 2018)
+
+Features:
+
+- Added a "dryrun" CLI input parameter, which when enabled allows users to run the tool without deleting any records, and the primary key for each record that would have been deleted is output to logs for review. Requires Service Manager build 1392 or above to work with request data
+- Added a "justrun" CLI input parameter, which when enabled will skip the initial "do you want to delete the data" prompts. This allows the tool to be run on a schedule
+- Improved logging output:
+    - Logs everything on both client and server side now, instead of just server side, to aid in the reviewing of logs
+    - At the start of the log, all configuration options (the CLI params AND all options & filters from the config JSON) are now logged for auditing purposes
+
 ## 1.6.0 (November 1st, 2018)
 
 Features:
