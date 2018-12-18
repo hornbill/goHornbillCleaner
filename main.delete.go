@@ -19,6 +19,9 @@ func deleteRecords(entity string, records []dataStruct) {
 			if entity == "Requests" {
 				id = v.RequestID
 				description = "Logged On: " + v.LogDate
+				if v.CloseDate != "" && v.CloseDate != "<nil>" {
+					description += ", Closed On: " + v.CloseDate
+				}
 			} else if entity == "Asset" {
 				id = v.AssetID
 				description = "Asset Name: " + v.AssetName

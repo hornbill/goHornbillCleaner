@@ -156,6 +156,14 @@ func logConfig() {
 			noFilters = false
 			espLogger("Filtered by RequestLogDateTo: "+cleanerConf.RequestLogDateTo, "info")
 		}
+		if cleanerConf.RequestClosedDateFrom != "" {
+			noFilters = false
+			espLogger("Filtered by RequestCloseDateFrom: "+cleanerConf.RequestClosedDateFrom, "info")
+		}
+		if cleanerConf.RequestClosedDateTo != "" {
+			noFilters = false
+			espLogger("Filtered by RequestCloseDateTo: "+cleanerConf.RequestClosedDateTo, "info")
+		}
 		if noFilters {
 			espLogger("No Request filters specified, all Requests and associated data will be deleted.", "warn")
 		}

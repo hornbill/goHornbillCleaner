@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	toolVer              = "1.7.0"
+	toolVer              = "1.8.0"
 	appServiceManager    = "com.hornbill.servicemanager"
 	datetimeFormat       = "2006-01-02 15:04:05"
 	minBoardManagerBuild = 100
@@ -60,6 +60,7 @@ type paramsStruct struct {
 type dataStruct struct {
 	RequestID   string `xml:"h_pk_reference"`
 	LogDate     string `xml:"h_datelogged"`
+	CloseDate   string `xml:"h_dateclosed"`
 	AssetID     string `xml:"h_pk_asset_id"`
 	AssetName   string `xml:"asset_name"`
 	AssetLinkID string `xml:"h_pk_id"`
@@ -83,14 +84,16 @@ type workflowStruct struct {
 }
 
 type cleanerConfStruct struct {
-	CleanRequests      bool
-	RequestServices    []int
-	RequestStatuses    []string
-	RequestTypes       []string
-	RequestLogDateFrom string
-	RequestLogDateTo   string
-	RequestReferences  []string
-	CleanAssets        bool
-	CleanUsers         bool
-	Users              []string
+	CleanRequests         bool
+	RequestServices       []int
+	RequestStatuses       []string
+	RequestTypes          []string
+	RequestLogDateFrom    string
+	RequestLogDateTo      string
+	RequestClosedDateFrom string
+	RequestClosedDateTo   string
+	RequestReferences     []string
+	CleanAssets           bool
+	CleanUsers            bool
+	Users                 []string
 }

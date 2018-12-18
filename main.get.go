@@ -85,6 +85,32 @@ func getRecordCount(table string) int {
 			}
 			strQuery += " h_datelogged <= '" + logDateTo + "'"
 		}
+
+		if cleanerConf.RequestClosedDateFrom != "" {
+			if strQuery != "" {
+				strQuery += " AND"
+			}
+
+			closeDateFrom := cleanerConf.RequestClosedDateFrom
+			boolIsDuration := durationRegex.MatchString(closeDateFrom)
+			if boolIsDuration {
+				fromTime, _ := hornbillHelpers.CalculateTimeDuration(time.Now(), closeDateFrom)
+				closeDateFrom = fromTime.UTC().Format(datetimeFormat)
+			}
+			strQuery += " h_dateclosed >= '" + closeDateFrom + "'"
+		}
+		if cleanerConf.RequestClosedDateTo != "" {
+			if strQuery != "" {
+				strQuery += " AND"
+			}
+			closeDateTo := cleanerConf.RequestClosedDateTo
+			boolIsDuration := durationRegex.MatchString(closeDateTo)
+			if boolIsDuration {
+				toTime, _ := hornbillHelpers.CalculateTimeDuration(time.Now(), closeDateTo)
+				closeDateTo = toTime.UTC().Format(datetimeFormat)
+			}
+			strQuery += " h_dateclosed <= '" + closeDateTo + "'"
+		}
 	}
 	espXmlmc.SetParam("database", "swdata")
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
@@ -185,6 +211,26 @@ func getRecordIDs(entity string) []dataStruct {
 			}
 			espXmlmc.SetParam("toDateTime", logDateTo)
 		}
+
+		if cleanerConf.RequestClosedDateFrom != "" {
+			closeDateFrom := cleanerConf.RequestClosedDateFrom
+			boolIsDuration := durationRegex.MatchString(closeDateFrom)
+			if boolIsDuration {
+				fromTime, _ := hornbillHelpers.CalculateTimeDuration(time.Now(), closeDateFrom)
+				closeDateFrom = fromTime.UTC().Format(datetimeFormat)
+			}
+			espXmlmc.SetParam("closeFromDateTime", closeDateFrom)
+		}
+		if cleanerConf.RequestClosedDateTo != "" {
+			closeDateTo := cleanerConf.RequestClosedDateTo
+			boolIsDuration := durationRegex.MatchString(closeDateTo)
+			if boolIsDuration {
+				toTime, _ := hornbillHelpers.CalculateTimeDuration(time.Now(), closeDateTo)
+				closeDateTo = toTime.UTC().Format(datetimeFormat)
+			}
+			espXmlmc.SetParam("closeToDateTime", closeDateTo)
+		}
+
 		espXmlmc.CloseElement("queryParams")
 
 		browse, err := espXmlmc.Invoke("data", "queryExec")
