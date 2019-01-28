@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.8.1 (January 28th, 2019)
+
+Defect Fix:
+
+- Fixed issue with RequestClosedDateFrom and RequestClosedDateTo returning a query error
+
 ## 1.8.0 (December 5th, 2018)
 
 Features:

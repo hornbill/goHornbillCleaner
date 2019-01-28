@@ -219,7 +219,7 @@ func getRecordIDs(entity string) []dataStruct {
 				fromTime, _ := hornbillHelpers.CalculateTimeDuration(time.Now(), closeDateFrom)
 				closeDateFrom = fromTime.UTC().Format(datetimeFormat)
 			}
-			espXmlmc.SetParam("closeFromDateTime", closeDateFrom)
+			espXmlmc.SetParam("closedFromDateTime", closeDateFrom)
 		}
 		if cleanerConf.RequestClosedDateTo != "" {
 			closeDateTo := cleanerConf.RequestClosedDateTo
@@ -228,7 +228,7 @@ func getRecordIDs(entity string) []dataStruct {
 				toTime, _ := hornbillHelpers.CalculateTimeDuration(time.Now(), closeDateTo)
 				closeDateTo = toTime.UTC().Format(datetimeFormat)
 			}
-			espXmlmc.SetParam("closeToDateTime", closeDateTo)
+			espXmlmc.SetParam("closedToDateTime", closeDateTo)
 		}
 
 		espXmlmc.CloseElement("queryParams")
