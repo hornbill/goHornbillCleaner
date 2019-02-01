@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.8.2 (February 1st, 2019)
+
+Defect Fix:
+
+- Fixed issue with AssetsLinks records not being cleared
+
 ## 1.8.1 (January 28th, 2019)
 
 Defect Fix:

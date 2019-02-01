@@ -86,16 +86,18 @@ func deleteRecords(entity string, records []dataStruct) {
 			id := ""
 			if entity == "Requests" {
 				id = v.RequestID
-			} else if entity == "Assets" {
+			} else if entity == "Asset" {
 				id = v.AssetID
+			} else if entity == "AssetsLinks" {
+				id = v.AssetLinkID
 			}
 			idsToDelete = append(idsToDelete, id)
 			espXmlmc.SetParam("keyValue", id)
 		}
 		deleted, err := espXmlmc.Invoke("data", "entityDeleteRecord")
 		if err != nil {
-			espLogger("Delete Records failed for entity ["+entity+"], block "+strconv.Itoa(currentBlock), "error")
-			color.Red("Delete Records failed for entity [" + entity + "], block " + strconv.Itoa(currentBlock))
+			espLogger("Delete Records failed for entity ["+entity+"], block "+strconv.Itoa(currentBlock)+": "+fmt.Sprintf("%v", err), "error")
+			color.Red("Delete Records failed for entity [" + entity + "], block " + strconv.Itoa(currentBlock) + ": " + fmt.Sprintf("%v", err))
 			return
 		}
 		var xmlRespon xmlmcResponse
