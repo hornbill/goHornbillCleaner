@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 1.9.0 (March 15th, 2019)
+
+Features:
+
+- Replaced large data set calls to entityBrowseRecords2 with paginated queries
+- Removed calls to sysOptionGet and sysOptionSet
+- Added support to remove additional Request BPM timers and events
+- Added support to remove Request SLM events
+
 ## 1.8.2 (February 1st, 2019)
 
 Defect Fix:

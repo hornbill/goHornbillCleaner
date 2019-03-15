@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/hornbill/color"
-	"github.com/hornbill/goHornbillHelpers"
+	hornbillHelpers "github.com/hornbill/goHornbillHelpers"
 )
 
 //getRecordCount - takes a table name, returns the total number of records in the entity
@@ -19,7 +19,7 @@ func getRecordCount(table string) int {
 			strQuery += " h_requesttype IN ("
 			firstElement := true
 			for _, reqType := range cleanerConf.RequestTypes {
-				if firstElement == false {
+				if !firstElement {
 					strQuery += ","
 				}
 				strQuery += "'" + reqType + "'"
@@ -35,7 +35,7 @@ func getRecordCount(table string) int {
 			strQuery += " h_status IN ("
 			firstElement := true
 			for _, reqStatus := range cleanerConf.RequestStatuses {
-				if firstElement == false {
+				if !firstElement {
 					strQuery += ","
 				}
 				strQuery += "'" + reqStatus + "'"
@@ -51,7 +51,7 @@ func getRecordCount(table string) int {
 			strQuery += " h_fk_serviceid IN ("
 			firstElement := true
 			for _, reqService := range cleanerConf.RequestServices {
-				if firstElement == false {
+				if !firstElement {
 					strQuery += ","
 				}
 				strQuery += strconv.Itoa(reqService)
@@ -140,30 +140,6 @@ func getRecordCount(table string) int {
 	return xmlRespon.Params.RecordCount
 }
 
-//getMaxRecordsSetting - gets and returns current maxResultsAllowed sys setting value
-func getMaxRecordsSetting() int {
-	espXmlmc.SetParam("filter", "api.xmlmc.queryExec.maxResultsAllowed")
-	browse, err := espXmlmc.Invoke("admin", "sysOptionGet")
-	if err != nil {
-		color.Red("Call to sysOptionGet for api.xmlmc.queryExec.maxResultsAllowed failed.")
-		espLogger("Call to sysOptionGet for api.xmlmc.queryExec.maxResultsAllowed failed.", "error")
-		return 0
-	}
-	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
-	if err != nil {
-		color.Red("Unmarshalling of data for sysOptionGet for api.xmlmc.queryExec.maxResultsAllowed failed.")
-		espLogger("Unmarshalling of data for sysOptionGet for api.xmlmc.queryExec.maxResultsAllowed failed.", "error")
-		return 0
-	}
-	if xmlRespon.MethodResult != "ok" {
-		espLogger("sysOptionGet was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
-		color.Red("sysOptionGet was unsuccessful in exiting")
-		return 0
-	}
-	return xmlRespon.Params.MaxResults
-}
-
 //getRecordIDs - returns an array of records for deletion
 func getRecordIDs(entity string) []dataStruct {
 	if currentBlock <= totalBlocks {
@@ -179,12 +155,10 @@ func getRecordIDs(entity string) []dataStruct {
 		for _, reqType := range cleanerConf.RequestTypes {
 			espXmlmc.SetParam("type", reqType)
 		}
-		if configDryRun {
-			if currentBlock == 1 {
-				espXmlmc.SetParam("rowstart", "0")
-			} else {
-				espXmlmc.SetParam("rowstart", strconv.Itoa((configBlockSize*currentBlock)-1))
-			}
+		if !configDryRun || (configDryRun && currentBlock == 1) {
+			espXmlmc.SetParam("rowstart", "0")
+		} else {
+			espXmlmc.SetParam("rowstart", strconv.Itoa((configBlockSize*currentBlock)-1))
 		}
 		espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
 		for _, reqStatus := range cleanerConf.RequestStatuses {
@@ -247,24 +221,23 @@ func getRecordIDs(entity string) []dataStruct {
 			return nil
 		}
 		if xmlRespon.MethodResult != "ok" {
-			espLogger("queryExec was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
-			color.Red("queryExec was unsuccessful: " + xmlRespon.State.ErrorRet)
+			espLogger("Requests queryExec was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
+			color.Red("Requests queryExec was unsuccessful: " + xmlRespon.State.ErrorRet)
 			return nil
 		}
 		return xmlRespon.Params.RecordIDs
 	}
 
 	if entity == "Asset" {
+
 		//Use a stored query to get asset IDs
 		espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 		espXmlmc.SetParam("queryName", "getAssetsList")
 		espXmlmc.OpenElement("queryParams")
-		if configDryRun {
-			if currentBlock == 1 {
-				espXmlmc.SetParam("rowstart", "0")
-			} else {
-				espXmlmc.SetParam("rowstart", strconv.Itoa((configBlockSize*currentBlock)-1))
-			}
+		if !configDryRun || (configDryRun && currentBlock == 1) {
+			espXmlmc.SetParam("rowstart", "0")
+		} else {
+			espXmlmc.SetParam("rowstart", strconv.Itoa((configBlockSize*currentBlock)-1))
 		}
 		espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
 		espXmlmc.CloseElement("queryParams")
@@ -285,33 +258,43 @@ func getRecordIDs(entity string) []dataStruct {
 			return nil
 		}
 		if xmlRespon.MethodResult != "ok" {
-			espLogger("queryExec was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
-			color.Red("queryExec was unsuccessful: " + xmlRespon.State.ErrorRet)
+			espLogger("Asset queryExec was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
+			color.Red("Asset queryExec was unsuccessful: " + xmlRespon.State.ErrorRet)
 			return nil
 		}
 		return xmlRespon.Params.RecordIDs
 	}
 
-	//Use entityBrowseRecords to get assetslinks entity records
+	//Use queryExec to get assetslinks entity records
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
-	espXmlmc.SetParam("entity", entity)
-	espXmlmc.SetParam("maxResults", strconv.Itoa(configBlockSize))
-	browse, err := espXmlmc.Invoke("data", "entityBrowseRecords")
+	espXmlmc.SetParam("queryName", "assetLinks")
+	espXmlmc.OpenElement("queryParams")
+	if !configDryRun || (configDryRun && currentBlock == 1) {
+		espXmlmc.SetParam("rowstart", "0")
+	} else {
+		espXmlmc.SetParam("rowstart", strconv.Itoa((configBlockSize*currentBlock)-1))
+	}
+	espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
+	espXmlmc.CloseElement("queryParams")
+	espXmlmc.OpenElement("queryOptions")
+	espXmlmc.SetParam("queryType", "records")
+	espXmlmc.CloseElement("queryOptions")
+	browse, err := espXmlmc.Invoke("data", "queryExec")
 	if err != nil {
-		espLogger("Call to entityBrowseRecords ["+entity+"] failed when returning block "+strconv.Itoa(currentBlock), "error")
-		color.Red("Call to entityBrowseRecords [" + entity + "] failed when returning block " + strconv.Itoa(currentBlock))
+		espLogger("Call to queryExec ["+entity+"] failed when returning block "+strconv.Itoa(currentBlock), "error")
+		color.Red("Call to queryExec [" + entity + "] failed when returning block " + strconv.Itoa(currentBlock))
 		return nil
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(browse), &xmlRespon)
 	if err != nil {
-		espLogger("Unmarshal of entityBrowseRecords ["+entity+"] data failed when returning block "+strconv.Itoa(currentBlock), "error")
-		color.Red("Unmarshal of entityBrowseRecords [" + entity + "] data failed when returning block " + strconv.Itoa(currentBlock))
+		espLogger("Unmarshal of queryExec ["+entity+"] data failed when returning block "+strconv.Itoa(currentBlock), "error")
+		color.Red("Unmarshal of queryExec [" + entity + "] data failed when returning block " + strconv.Itoa(currentBlock))
 		return nil
 	}
 	if xmlRespon.MethodResult != "ok" {
-		espLogger("entityBrowseRecords was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
-		color.Red("entityBrowseRecords was unsuccessful: " + xmlRespon.State.ErrorRet)
+		espLogger("AssetLinks queryExec was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
+		color.Red("AssetLinks queryExec was unsuccessful: " + xmlRespon.State.ErrorRet)
 		return nil
 	}
 	return xmlRespon.Params.RecordIDs
@@ -349,7 +332,7 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 		espXmlmc.SetParam("objectRefUrn", "urn:sys:entity:"+appServiceManager+":Requests:"+callRef)
 
 		for k := range objCounter {
-			espXmlmc.SetParam("taskStatus", fmt.Sprintf("%s", k))
+			espXmlmc.SetParam("taskStatus", k)
 		}
 
 		browse, errTask := espXmlmc.Invoke("apps/"+appServiceManager+"/Task", "getEntityTasks")
@@ -379,7 +362,7 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 }
 
 func getRequestAssetLinks(callref string) []dataStruct {
-	//Use entityBrowseRecords to get asset entity records
+	//Use entityBrowseRecords2 to get asset links entity records
 	callrefURN := "urn:sys:entity:com.hornbill.servicemanager:Requests:" + callref
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("entity", "AssetsLinks")
@@ -445,7 +428,7 @@ func getRequestWorkflow(callRef string) string {
 
 //getSystemTimerIDs - take call reference, return array of System Timers that are associated with it
 func getSystemTimerIDs(callRef string) []dataStruct {
-	//Use a stored query to get request IDs
+	//Use a stored query to get timer IDs
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("queryName", "getRequestSystemTimers")
 	espXmlmc.OpenElement("queryParams")
@@ -467,6 +450,35 @@ func getSystemTimerIDs(callRef string) []dataStruct {
 	if xmlRespon.MethodResult != "ok" {
 		espLogger("queryExec [getRequestSystemTimers] was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
 		color.Red("queryExec [getRequestSystemTimers] was unsuccessful: " + xmlRespon.State.ErrorRet)
+		return nil
+	}
+	return xmlRespon.Params.RecordIDs
+}
+
+//getRequestBPMEvents - take call reference, return array of System Timers that are associated with it
+func getRequestBPMEvents(callRef string) []dataStruct {
+	//Use a stored query to get request IDs
+	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
+	espXmlmc.SetParam("queryName", "getRequestBPMEvents")
+	espXmlmc.OpenElement("queryParams")
+	espXmlmc.SetParam("inRequestId", callRef)
+	espXmlmc.CloseElement("queryParams")
+	browse, err := espXmlmc.Invoke("data", "queryExec")
+	if err != nil {
+		espLogger("Call to queryExec [getRequestBPMEvents] failed for Request "+callRef+" : "+fmt.Sprintf("%s", err), "error")
+		color.Red("Call to queryExec [getRequestBPMEvents] failed for Request " + callRef)
+		return nil
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	if err != nil {
+		espLogger("Unmarshal of queryExec [getRequestBPMEvents] data failed for Request "+callRef+" : "+fmt.Sprintf("%s", err), "error")
+		color.Red("Unmarshal of queryExec [getRequestBPMEvents] data failed for Request " + callRef)
+		return nil
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("queryExec [getRequestBPMEvents] was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
+		color.Red("queryExec [getRequestBPMEvents] was unsuccessful: " + xmlRespon.State.ErrorRet)
 		return nil
 	}
 	return xmlRespon.Params.RecordIDs
@@ -498,7 +510,7 @@ func getAppList() ([]appsStruct, bool) {
 }
 
 func getRequestCards(callref string) []dataStruct {
-	//Use entityBrowseRecords to get asset entity records
+	//Use entityBrowseRecords2 to get Board Manager cards against requests
 	espXmlmc.SetParam("application", "com.hornbill.boardmanager")
 	espXmlmc.SetParam("entity", "Card")
 	espXmlmc.OpenElement("searchFilter")
@@ -522,6 +534,36 @@ func getRequestCards(callref string) []dataStruct {
 	if xmlRespon.MethodResult != "ok" {
 		espLogger("entityBrowseRecords2 was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
 		color.Red("entityBrowseRecords2 was unsuccessful: " + xmlRespon.State.ErrorRet)
+		return nil
+	}
+	return xmlRespon.Params.RecordIDs
+}
+
+func getRequestSLMEvents(callref string) []dataStruct {
+	//Use entityBrowseRecords2 to get Request SLM Events entity records
+	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
+	espXmlmc.SetParam("entity", "RequestSLMEvt")
+	espXmlmc.OpenElement("searchFilter")
+	espXmlmc.SetParam("column", "h_request_id")
+	espXmlmc.SetParam("value", callref)
+	espXmlmc.SetParam("matchType", "exact")
+	espXmlmc.CloseElement("searchFilter")
+	browse, err := espXmlmc.Invoke("data", "entityBrowseRecords2")
+	if err != nil {
+		espLogger("Call to entityBrowseRecords2 failed when returning SLM Events for "+callref, "error")
+		color.Red("Call to entityBrowseRecords2 failed when returning SLM Events for " + callref)
+		return nil
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	if err != nil {
+		espLogger("Unmarshal of entityBrowseRecords2 failed when returning SLM Events for "+callref, "error")
+		color.Red("Unmarshal of entityBrowseRecords2 failed when returning SLM Events for " + callref)
+		return nil
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("entityBrowseRecords2 was unsuccessful for SLM Events: "+xmlRespon.State.ErrorRet, "error")
+		color.Red("entityBrowseRecords2 was unsuccessful for SLM Events: " + xmlRespon.State.ErrorRet)
 		return nil
 	}
 	return xmlRespon.Params.RecordIDs

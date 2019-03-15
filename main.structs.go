@@ -3,11 +3,11 @@ package main
 import (
 	"regexp"
 
-	"github.com/hornbill/goApiLib"
+	apiLib "github.com/hornbill/goApiLib"
 )
 
 const (
-	toolVer              = "1.8.2"
+	version              = "1.9.0"
 	appServiceManager    = "com.hornbill.servicemanager"
 	datetimeFormat       = "2006-01-02 15:04:05"
 	minBoardManagerBuild = 100
@@ -22,9 +22,9 @@ var (
 	configBlockSize       int
 	configDryRun          bool
 	configSkipPrompts     bool
+	configVersion         bool
 	durationRegex         = regexp.MustCompile(`P[0-9]*D[0-9]*H[0-9]*M[0-9]*S`)
 	maxResults            int
-	resetResults          bool
 	currentBlock          int
 	totalBlocks           int
 	espXmlmc              *apiLib.XmlmcInstStruct
@@ -64,8 +64,10 @@ type dataStruct struct {
 	AssetID     string `xml:"h_pk_asset_id"`
 	AssetName   string `xml:"asset_name"`
 	AssetLinkID string `xml:"h_pk_id"`
-	CardID      string `xml:"rowData>row>h_id"`
-	TimerID     string `xml:"rowData>row>h_pk_tid"`
+	BPMEventID  string `xml:"h_fk_eventid"`
+	BPMTimerID  string `xml:"h_fk_timerid"`
+	CardID      string `xml:"h_id"`
+	TimerID     string `xml:"h_pk_tid"`
 }
 
 type taskStruct struct {
@@ -77,10 +79,6 @@ type appsStruct struct {
 	Name   string `xml:"name"`
 	Status string `xml:"status"`
 	Build  int    `xml:"build"`
-}
-
-type workflowStruct struct {
-	WorkflowID string
 }
 
 type cleanerConfStruct struct {

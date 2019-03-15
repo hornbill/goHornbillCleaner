@@ -44,6 +44,30 @@ func deleteRecords(entity string, records []dataStruct) {
 						}
 					}
 				}
+
+				//-- BPM Events
+				bpmTimerIDs := getRequestBPMEvents(callRef.RequestID)
+				if len(bpmTimerIDs) != 0 {
+					for _, timerRecord := range bpmTimerIDs {
+						if timerRecord.BPMEventID != "<nil>" && timerRecord.BPMEventID != "" {
+							deleteEvent(timerRecord.BPMEventID)
+						}
+						if timerRecord.BPMTimerID != "<nil>" && timerRecord.BPMTimerID != "" {
+							deleteTimer(timerRecord.BPMTimerID)
+						}
+					}
+				}
+
+				//-- SLM Timer Events
+				slmEventIDs := getRequestSLMEvents(callRef.RequestID)
+				if len(slmEventIDs) != 0 {
+					for _, eventRecord := range slmEventIDs {
+						if eventRecord.BPMEventID != "<nil>" && eventRecord.BPMEventID != "" {
+							deleteEvent(eventRecord.BPMEventID)
+						}
+					}
+				}
+
 				//-- Spawned workflow
 				requestWorkflow := getRequestWorkflow(callRef.RequestID)
 				if requestWorkflow != "<nil>" && requestWorkflow != "" {
@@ -54,7 +78,9 @@ func deleteRecords(entity string, records []dataStruct) {
 				requestTasks := getRequestTasks(callRef.RequestID)
 				for _, stateMap := range requestTasks {
 					for _, taskMap := range stateMap {
-						deleteTask(taskMap.TaskID)
+						if taskMap.TaskID != "<nil>" && taskMap.TaskID != "" {
+							deleteTask(taskMap.TaskID)
+						}
 					}
 				}
 
@@ -117,9 +143,7 @@ func deleteRecords(entity string, records []dataStruct) {
 		}
 		color.Green("Block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " deleted.")
 	}
-
 	currentBlock++
-	return
 }
 
 func deleteUser(strUser string) {
@@ -146,7 +170,6 @@ func deleteUser(strUser string) {
 	}
 	espLogger("User ["+strUser+"] deleted.", "debug")
 	color.Green("User [" + strUser + "] deleted.")
-	return
 }
 
 //deleteTimer - Takes a System Timer ID, sends it to time::timerDelete API for safe deletion
@@ -171,6 +194,30 @@ func deleteTimer(timerID string) {
 		return
 	}
 	espLogger("Timer instance sucessfully deleted ["+timerID+"] ", "debug")
+}
+
+//deleteEvent - Takes a System Timer Event ID, sends it to time::timerDelete API for safe deletion
+func deleteEvent(eventID string) {
+	espXmlmc.SetParam("eventId", eventID)
+	browse, err := espXmlmc.Invoke("time", "timerEventDelete")
+	if err != nil {
+		espLogger("Deletion of System Timer Event failed ["+eventID+"]", "error")
+		color.Red("Deletion of System Timer Event failed [" + eventID + "]")
+		return
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	if err != nil {
+		espLogger("Unmarshal of response to deletion of System Timer Event failed ["+eventID+"]", "error")
+		color.Red("Unmarshal of response to deletion of System Timer Event failed [" + eventID + "]")
+		return
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("API Call to delete System Timer Event failed ["+eventID+"] "+xmlRespon.State.ErrorRet, "error")
+		color.Red("API Call to delete System Timer Event failed [" + eventID + "] " + xmlRespon.State.ErrorRet)
+		return
+	}
+	espLogger("Timer Event instance sucessfully deleted ["+eventID+"] ", "debug")
 }
 
 //deleteTask - Takes a Task ID, sends it to task::taskDelete API for safe deletion
