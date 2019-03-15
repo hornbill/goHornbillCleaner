@@ -8,15 +8,19 @@ This utility permanently deletes request, asset or user records, and records of 
 
 ## Quick Links
 
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Execute](#execute)
+- [Hornbill Cleaner](#hornbill-cleaner)
+  - [WARNING](#warning)
+  - [Quick Links](#quick-links)
+  - [Installation](#installation)
+    - [Windows](#windows)
+  - [Configuration](#configuration)
+  - [Execute](#execute)
 
 ## Installation
 
 ### Windows
 
-- Download the ZIP archive containing the cleaner executable, configuration file and license;
+- Download the OS-specific ZIP archive containing the cleaner executable, configuration file and license;
 - Extract the ZIP archive into a folder you would like the application to run from e.g. 'C:\hornbill_cleaner\'.
 
 ## Configuration
@@ -102,14 +106,14 @@ Command Line Parameters
 - dryrun : Requires Service Manager build >= 1392 to work with request data. This boolean flag allows a "dry run" to be performed - the tool identifies the primary key for all parent records that would have been deleted, and outputs them to the log file without deleting any records. Defaults to false.
 - justrun : This boolean flag allows you to skip the confirmation prompts when the tool is run. This allows the tool to be scheduled, with the correct configuration defined to delete request records over a certain age for example. Defaults to false.
 
-'hornbillCleaner_x64.exe -instance=yourinstancename -apikey=yourapikey -file=conf.json'
+'hornbillCleaner.exe -instance=yourinstancename -apikey=yourapikey -file=conf.json'
 
 When you are ready to clear-down your request and/or asset records:
 
 - Open '''conf.json''' and add in the necessary configration;
 - Open Command Line Prompt as Administrator;
-- Change Directory to the folder with hornbillCleaner_* executables 'C:\hornbill_cleaner\';
+- Change Directory to the folder with hornbillCleaner executable 'C:\hornbill_cleaner\';
 - Run the command:
-  - On 32 bit Windows PCs: hornbillCleaner_x86.exe -instance=yourinstancename -apikey=yourapikey
-  - On 64 bit Windows PCs: hornbillCleaner_x64.exe -instance=yourinstancename -apikey=yourapikey -dryrun=true
+  - On 32 bit Windows PCs: hornbillCleaner.exe -instance=yourinstancename -apikey=yourapikey
+  - On 64 bit Windows PCs: hornbillCleaner.exe -instance=yourinstancename -apikey=yourapikey -dryrun=true
 - Follow all on-screen prompts, taking careful note of all prompts and messages provided.
