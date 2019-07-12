@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.10.0 (July 12th, 2019)
+
+Features:
+
+- Added support to filter assets for deletion by class and type
+
 ## 1.9.0 (March 15th, 2019)
 
 Features:

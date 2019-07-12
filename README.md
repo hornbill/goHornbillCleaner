@@ -8,13 +8,13 @@ This utility permanently deletes request, asset or user records, and records of 
 
 ## Quick Links
 
-- [Hornbill Cleaner](#hornbill-cleaner)
-  - [WARNING](#warning)
-  - [Quick Links](#quick-links)
-  - [Installation](#installation)
-    - [Windows](#windows)
-  - [Configuration](#configuration)
-  - [Execute](#execute)
+- [Hornbill Cleaner](#Hornbill-Cleaner)
+  - [WARNING](#WARNING)
+  - [Quick Links](#Quick-Links)
+  - [Installation](#Installation)
+    - [Windows](#Windows)
+  - [Configuration](#Configuration)
+  - [Execute](#Execute)
 
 ## Installation
 
@@ -54,6 +54,8 @@ Example JSON File:
           "INC00000003"
       ],
       "CleanAssets": false,
+      "AssetClassID": "",
+	    "AssetTypeID": 0,
       "CleanUsers":true,
       "Users":[
           "userIdOne",
@@ -92,6 +94,8 @@ Example JSON File:
       - See the CalculateTimeDuration function documentation in <https://github.com/hornbill/goHornbillHelpers> for more details
   - RequestReferences : An array of Request References to delete. If requests are defined in this array, then ONLY these requests will be deleted. The other parameters above will be ignored. In the example above, requests with reference CHR00000021 and INC00000003 would be deleted, and no other requests would be removed.
 - CleanAssets : Set to true to remove all Assets (and related entity data) from a Hornbill instance
+- AssetClassID: Filter assets for deletetion by a single asset class ID (basic, computer, computerPeripheral, mobileDevice, printer, software, telecoms)
+- AssetTypeID: Filter assets for deletion by a single asset type ID - the primary key value of the asset type from the database. Can also be found in the URL when viewing an asset type, 18 in this example: https://live.hornbill.com/yourinstanceid/servicemanager/asset/type/view/18/ 
 - CleanUsers : Set to true to remove all Users listed in the Users array
 - Users : Array of strings, contains a list of User IDs to remove from your Hornbill instance
 

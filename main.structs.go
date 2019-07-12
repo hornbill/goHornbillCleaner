@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	version              = "1.9.0"
+	version              = "1.10.0"
 	appServiceManager    = "com.hornbill.servicemanager"
 	datetimeFormat       = "2006-01-02 15:04:05"
 	minBoardManagerBuild = 100
@@ -92,6 +92,8 @@ type cleanerConfStruct struct {
 	RequestClosedDateTo   string
 	RequestReferences     []string
 	CleanAssets           bool
+	AssetClassID          string
+	AssetTypeID           int
 	CleanUsers            bool
 	Users                 []string
 }

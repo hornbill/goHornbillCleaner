@@ -71,7 +71,7 @@ func main() {
 		color.Magenta(" * Requests (and related data)")
 	}
 	if cleanerConf.CleanAssets {
-		color.Magenta(" * All Assets (and related data)")
+		color.Magenta(" * Assets (and related data)")
 	}
 	if cleanerConf.CleanUsers {
 		color.Magenta(" * Specified Users (and related data)")

@@ -112,6 +112,19 @@ func getRecordCount(table string) int {
 			strQuery += " h_dateclosed <= '" + closeDateTo + "'"
 		}
 	}
+
+	if table == "h_cmdb_assets" {
+		if cleanerConf.AssetClassID != "" {
+			strQuery += " h_class = '" + cleanerConf.AssetClassID + "'"
+		}
+
+		if cleanerConf.AssetTypeID > 0 {
+			if strQuery != "" {
+				strQuery += " AND"
+			}
+			strQuery += " h_type = " + strconv.Itoa(cleanerConf.AssetTypeID)
+		}
+	}
 	espXmlmc.SetParam("database", "swdata")
 	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
 	espXmlmc.SetParam("table", table)
@@ -229,11 +242,16 @@ func getRecordIDs(entity string) []dataStruct {
 	}
 
 	if entity == "Asset" {
-
 		//Use a stored query to get asset IDs
 		espXmlmc.SetParam("application", "com.hornbill.servicemanager")
-		espXmlmc.SetParam("queryName", "getAssetsList")
+		espXmlmc.SetParam("queryName", "Asset.getAssetsFiltered")
 		espXmlmc.OpenElement("queryParams")
+		if cleanerConf.AssetClassID != "" {
+			espXmlmc.SetParam("assetClass", cleanerConf.AssetClassID)
+		}
+		if cleanerConf.AssetTypeID > 0 {
+			espXmlmc.SetParam("assetType", strconv.Itoa(cleanerConf.AssetTypeID))
+		}
 		if !configDryRun || (configDryRun && currentBlock == 1) {
 			espXmlmc.SetParam("rowstart", "0")
 		} else {
@@ -241,20 +259,20 @@ func getRecordIDs(entity string) []dataStruct {
 		}
 		espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
 		espXmlmc.CloseElement("queryParams")
-		espXmlmc.OpenElement("queryOptions")
-		espXmlmc.SetParam("queryType", "records")
-		espXmlmc.CloseElement("queryOptions")
+		//espXmlmc.OpenElement("queryOptions")
+		//espXmlmc.SetParam("queryType", "records")
+		//espXmlmc.CloseElement("queryOptions")
 		browse, err := espXmlmc.Invoke("data", "queryExec")
 		if err != nil {
-			espLogger("Call to queryExec ["+entity+"] failed when returning block "+strconv.Itoa(currentBlock), "error")
-			color.Red("Call to queryExec [" + entity + "] failed when returning block " + strconv.Itoa(currentBlock))
+			espLogger("Call to queryExec [Assets] failed when returning block "+strconv.Itoa(currentBlock), "error")
+			color.Red("Call to queryExec [Assets] failed when returning block " + strconv.Itoa(currentBlock))
 			return nil
 		}
 		var xmlRespon xmlmcResponse
 		err = xml.Unmarshal([]byte(browse), &xmlRespon)
 		if err != nil {
-			espLogger("Unmarshal of queryExec ["+entity+"] data failed when returning block "+strconv.Itoa(currentBlock), "error")
-			color.Red("Unmarshal of queryExec [" + entity + "] data failed when returning block " + strconv.Itoa(currentBlock))
+			espLogger("Unmarshal of queryExec [Assets] data failed when returning block "+strconv.Itoa(currentBlock), "error")
+			color.Red("Unmarshal of queryExec [Assets] data failed when returning block " + strconv.Itoa(currentBlock))
 			return nil
 		}
 		if xmlRespon.MethodResult != "ok" {
@@ -276,9 +294,6 @@ func getRecordIDs(entity string) []dataStruct {
 	}
 	espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
 	espXmlmc.CloseElement("queryParams")
-	espXmlmc.OpenElement("queryOptions")
-	espXmlmc.SetParam("queryType", "records")
-	espXmlmc.CloseElement("queryOptions")
 	browse, err := espXmlmc.Invoke("data", "queryExec")
 	if err != nil {
 		espLogger("Call to queryExec ["+entity+"] failed when returning block "+strconv.Itoa(currentBlock), "error")

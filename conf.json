@@ -10,6 +10,8 @@
 	"RequestClosedDateFrom":"",
 	"RequestClosedDateTo":"",
 	"CleanAssets": false,
+	"AssetClassID": "",
+	"AssetTypeID": 0,
 	"CleanUsers":false,
 	"Users":[]
 }
