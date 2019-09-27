@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hornbill/color"
+	"github.com/fatih/color"
 	apiLib "github.com/hornbill/goApiLib"
 	hornbillHelpers "github.com/hornbill/goHornbillHelpers"
 )
@@ -190,11 +190,9 @@ func isAppInstalled(appName string, buildVer int) bool {
 
 func processRequests() {
 	//Process Request Records
-	espLogger("System Setting Max Results: "+strconv.Itoa(maxResults), "debug")
-
 	if cleanerConf.CleanRequests {
 		//Is Board Manager installed
-		boardManagerInstalled = isAppInstalled("com.hornbill.boardmanager", minBoardManagerBuild)
+		boardManagerInstalled = isAppInstalled(appBM, minBoardManagerBuild)
 
 		requestCount := 0
 		if len(cleanerConf.RequestReferences) > 0 {
@@ -231,6 +229,7 @@ func processRequests() {
 func processAssets() {
 	//Process Asset Records
 	if cleanerConf.CleanAssets {
+		configManagerInstalled = isAppInstalled(appCM, minConfigManagerBuild)
 		assetCount := getRecordCount("h_cmdb_assets")
 		if assetCount > 0 {
 			currentBlock = 1

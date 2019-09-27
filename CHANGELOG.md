@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 1.11.0 (September 27th, 2019)
+
+Features:
+
+- Added support to clean-up Configuration Manager Dependency, Impact and Policy records when Assets are deleted
+- Refactored to remove duplicate code
+- Improved log output consistency
+
 ## 1.10.0 (July 12th, 2019)
 
 Features:

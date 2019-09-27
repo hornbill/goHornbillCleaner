@@ -5,9 +5,10 @@ import (
 	"encoding/xml"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/hornbill/color"
+	"github.com/fatih/color"
 	hornbillHelpers "github.com/hornbill/goHornbillHelpers"
 )
 
@@ -126,7 +127,7 @@ func getRecordCount(table string) int {
 		}
 	}
 	espXmlmc.SetParam("database", "swdata")
-	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
+	espXmlmc.SetParam("application", appSM)
 	espXmlmc.SetParam("table", table)
 	if strQuery != "" {
 		espXmlmc.SetParam("where", strQuery)
@@ -134,20 +135,20 @@ func getRecordCount(table string) int {
 
 	browse, err := espXmlmc.Invoke("data", "getRecordCount")
 	if err != nil {
-		color.Red("Get Record Count API Invoke failed for table: [" + table + "]")
-		espLogger("Get Record Count API Invoke failed for table: ["+table+"]", "error")
+		espLogger("getRecordCount:Invoke:"+table+":"+strQuery+":"+err.Error(), "error")
+		color.Red("getRecordCount Invoke failed for " + table + ":" + err.Error())
 		return 0
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(browse), &xmlRespon)
 	if err != nil {
-		color.Red("Get Record Count data unmarshalling failed for table: [" + table + "]")
-		espLogger("Get Record Count data unmarshalling failed for table: ["+table+"]", "error")
+		espLogger("getRecordCount:Unmarshal:"+table+":"+strQuery+":"+err.Error(), "error")
+		color.Red("getRecordCount Unmarshal failed for " + table + ":" + err.Error())
 		return 0
 	}
 	if xmlRespon.MethodResult != "ok" {
-		color.Red("sqlQuery was unsuccessful for table [" + table + "]: " + xmlRespon.State.ErrorRet)
-		espLogger("Count sqlQuery was unsuccessful for table ["+table+"]: "+xmlRespon.State.ErrorRet, "error")
+		espLogger("getRecordCount:MethodResult:"+table+":"+strQuery+":"+xmlRespon.State.ErrorRet, "error")
+		color.Red("getRecordCount MethodResult failed for " + table + ":" + xmlRespon.State.ErrorRet)
 		return 0
 	}
 	return xmlRespon.Params.RecordCount
@@ -162,7 +163,7 @@ func getRecordIDs(entity string) []dataStruct {
 	}
 	if entity == "Requests" {
 		//Use a stored query to get request IDs
-		espXmlmc.SetParam("application", "com.hornbill.servicemanager")
+		espXmlmc.SetParam("application", appSM)
 		espXmlmc.SetParam("queryName", "_listRequestsOfType")
 		espXmlmc.OpenElement("queryParams")
 		for _, reqType := range cleanerConf.RequestTypes {
@@ -222,20 +223,20 @@ func getRecordIDs(entity string) []dataStruct {
 
 		browse, err := espXmlmc.Invoke("data", "queryExec")
 		if err != nil {
-			espLogger("Call to queryExec ["+entity+"] failed when returning block "+strconv.Itoa(currentBlock), "error")
-			color.Red("Call to queryExec [" + entity + "] failed when returning block " + strconv.Itoa(currentBlock))
+			espLogger("queryExec:Invoke:"+appSM+":_listRequestsOfType:"+err.Error(), "error")
+			color.Red("queryExec Invoke failed for " + appSM + ":_listRequestsOfType:" + err.Error())
 			return nil
 		}
 		var xmlRespon xmlmcResponse
 		err = xml.Unmarshal([]byte(browse), &xmlRespon)
 		if err != nil {
-			espLogger("Unmarshal of queryExec ["+entity+"] data failed when returning block "+strconv.Itoa(currentBlock), "error")
-			color.Red("Unmarshal of queryExec [" + entity + "] data failed when returning block " + strconv.Itoa(currentBlock))
+			espLogger("queryExec:Unmarshal:"+appSM+":_listRequestsOfType:"+err.Error(), "error")
+			color.Red("queryExec Unmarshal failed for " + appSM + ":_listRequestsOfType:" + err.Error())
 			return nil
 		}
 		if xmlRespon.MethodResult != "ok" {
-			espLogger("Requests queryExec was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
-			color.Red("Requests queryExec was unsuccessful: " + xmlRespon.State.ErrorRet)
+			espLogger("queryExec:MethodResult:"+appSM+":_listRequestsOfType:"+xmlRespon.State.ErrorRet, "error")
+			color.Red("queryExec MethodResult failed for " + appSM + ":_listRequestsOfType:" + xmlRespon.State.ErrorRet)
 			return nil
 		}
 		return xmlRespon.Params.RecordIDs
@@ -243,7 +244,7 @@ func getRecordIDs(entity string) []dataStruct {
 
 	if entity == "Asset" {
 		//Use a stored query to get asset IDs
-		espXmlmc.SetParam("application", "com.hornbill.servicemanager")
+		espXmlmc.SetParam("application", appSM)
 		espXmlmc.SetParam("queryName", "Asset.getAssetsFiltered")
 		espXmlmc.OpenElement("queryParams")
 		if cleanerConf.AssetClassID != "" {
@@ -259,32 +260,29 @@ func getRecordIDs(entity string) []dataStruct {
 		}
 		espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
 		espXmlmc.CloseElement("queryParams")
-		//espXmlmc.OpenElement("queryOptions")
-		//espXmlmc.SetParam("queryType", "records")
-		//espXmlmc.CloseElement("queryOptions")
 		browse, err := espXmlmc.Invoke("data", "queryExec")
 		if err != nil {
-			espLogger("Call to queryExec [Assets] failed when returning block "+strconv.Itoa(currentBlock), "error")
-			color.Red("Call to queryExec [Assets] failed when returning block " + strconv.Itoa(currentBlock))
+			espLogger("queryExec:Invoke:"+appSM+":Asset.getAssetsFiltered:"+err.Error(), "error")
+			color.Red("queryExec Invoke failed for " + appSM + ":Asset.getAssetsFiltered:" + err.Error())
 			return nil
 		}
 		var xmlRespon xmlmcResponse
 		err = xml.Unmarshal([]byte(browse), &xmlRespon)
 		if err != nil {
-			espLogger("Unmarshal of queryExec [Assets] data failed when returning block "+strconv.Itoa(currentBlock), "error")
-			color.Red("Unmarshal of queryExec [Assets] data failed when returning block " + strconv.Itoa(currentBlock))
+			espLogger("queryExec:Unmarshal:"+appSM+":Asset.getAssetsFiltered:"+err.Error(), "error")
+			color.Red("queryExec Unmarshal failed for " + appSM + ":Asset.getAssetsFiltered:" + err.Error())
 			return nil
 		}
 		if xmlRespon.MethodResult != "ok" {
-			espLogger("Asset queryExec was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
-			color.Red("Asset queryExec was unsuccessful: " + xmlRespon.State.ErrorRet)
+			espLogger("queryExec:MethodResult:"+appSM+":Asset.getAssetsFiltered:"+xmlRespon.State.ErrorRet, "error")
+			color.Red("queryExec MethodResult failed for " + appSM + ":Asset.getAssetsFiltered:" + xmlRespon.State.ErrorRet)
 			return nil
 		}
 		return xmlRespon.Params.RecordIDs
 	}
 
 	//Use queryExec to get assetslinks entity records
-	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
+	espXmlmc.SetParam("application", appSM)
 	espXmlmc.SetParam("queryName", "assetLinks")
 	espXmlmc.OpenElement("queryParams")
 	if !configDryRun || (configDryRun && currentBlock == 1) {
@@ -318,24 +316,24 @@ func getRecordIDs(entity string) []dataStruct {
 //getRequestTasks - take a call reference, get all associated request tasks
 func getRequestTasks(callRef string) map[string][]taskStruct {
 	//First get request task counters so we can set correct state
-	espXmlmc.SetParam("objectRefUrn", "urn:sys:entity:"+appServiceManager+":Requests:"+callRef)
+	espXmlmc.SetParam("objectRefUrn", "urn:sys:entity:"+appSM+":Requests:"+callRef)
 	espXmlmc.SetParam("counters", "true")
 	getCounters, err := espXmlmc.Invoke("apps/com.hornbill.core/Task", "getEntityTasks")
 	if err != nil {
-		espLogger("Call to [getEntityTasks] failed for Request "+callRef+" : "+fmt.Sprintf("%s", err), "error")
-		color.Red("Call to [getEntityTasks] failed for Request " + callRef)
+		espLogger("getEntityTasks:Invoke:Request:"+callRef+":"+err.Error(), "error")
+		color.Red("getEntityTasks Invoke failed for Request:" + callRef + ":" + err.Error())
 		return nil
 	}
 	var xmlResponCount xmlmcTaskResponse
 	err = xml.Unmarshal([]byte(getCounters), &xmlResponCount)
 	if err != nil {
-		espLogger("Unmarshal of [getEntityTasks] data failed for Request "+callRef+" : "+fmt.Sprintf("%s", err), "error")
-		color.Red("Unmarshal of [getEntityTasks] data failed for Request " + callRef)
+		espLogger("getEntityTasks:Unmarshal:Request:"+callRef+":"+err.Error(), "error")
+		color.Red("getEntityTasks Unmarshal failed for Request:" + callRef + ":" + err.Error())
 		return nil
 	}
 	if xmlResponCount.MethodResult != "ok" {
-		espLogger("[getEntityTasks] was unsuccessful for Request "+callRef+": "+xmlResponCount.State.ErrorRet, "error")
-		color.Red("[getEntityTasks] was unsuccessful for Request " + callRef + ": " + xmlResponCount.State.ErrorRet)
+		espLogger("getEntityTasks:MethodResult:Request:"+callRef+":"+xmlResponCount.State.ErrorRet, "error")
+		color.Red("getEntityTasks MethodResult failed for Request:" + callRef + ":" + xmlResponCount.State.ErrorRet)
 		return nil
 	}
 
@@ -344,28 +342,28 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 
 	if len(objCounter) > 0 {
 		//--  get task IDs
-		espXmlmc.SetParam("objectRefUrn", "urn:sys:entity:"+appServiceManager+":Requests:"+callRef)
+		espXmlmc.SetParam("objectRefUrn", "urn:sys:entity:"+appSM+":Requests:"+callRef)
 
 		for k := range objCounter {
 			espXmlmc.SetParam("taskStatus", k)
 		}
 
-		browse, errTask := espXmlmc.Invoke("apps/"+appServiceManager+"/Task", "getEntityTasks")
+		browse, errTask := espXmlmc.Invoke("apps/"+appSM+"/Task", "getEntityTasks")
 		if errTask != nil {
-			espLogger("Call to [getEntityTasks] failed for Request "+callRef+" : "+fmt.Sprintf("%s", errTask), "error")
-			color.Red("Call to [getEntityTasks] failed for Request " + callRef)
+			espLogger("getEntityTasks:taskStatus:Invoke:Request:"+callRef+":"+errTask.Error(), "error")
+			color.Red("getEntityTasks Invoke failed for Request:" + callRef + ":" + errTask.Error())
 			return nil
 		}
 		var xmlRespon xmlmcTaskResponse
 		errTask = xml.Unmarshal([]byte(browse), &xmlRespon)
 		if errTask != nil {
-			espLogger("Unmarshal of [getEntityTasks] data failed for Request "+callRef+" : "+fmt.Sprintf("%s", errTask), "error")
-			color.Red("Unmarshal of [getEntityTasks] data failed for Request " + callRef)
+			espLogger("getEntityTasks:taskStatus:Unmarshal:Request:"+callRef+":"+errTask.Error(), "error")
+			color.Red("getEntityTasks Unmarshal failed for Request:" + callRef + ":" + errTask.Error())
 			return nil
 		}
 		if xmlRespon.MethodResult != "ok" {
-			espLogger("[getEntityTasks] was unsuccessful for Request "+callRef+": "+xmlRespon.State.ErrorRet, "error")
-			color.Red("[getEntityTasks] was unsuccessful for Request " + callRef + ": " + xmlRespon.State.ErrorRet)
+			espLogger("getEntityTasks:taskStatus:MethodResult:Request:"+callRef+":"+xmlRespon.State.ErrorRet, "error")
+			color.Red("getEntityTasks MethodResult failed for Request:" + callRef + ":" + xmlRespon.State.ErrorRet)
 			return nil
 		}
 		//Unmarshall JSON string in to map containing taskStruct slices
@@ -376,127 +374,32 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 	return nil
 }
 
-func getRequestAssetLinks(callref string) []dataStruct {
-	//Use entityBrowseRecords2 to get asset links entity records
-	callrefURN := "urn:sys:entity:com.hornbill.servicemanager:Requests:" + callref
-	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
-	espXmlmc.SetParam("entity", "AssetsLinks")
-	espXmlmc.SetParam("matchScope", "any")
-	espXmlmc.OpenElement("searchFilter")
-	espXmlmc.SetParam("column", "h_fk_id_l")
-	espXmlmc.SetParam("value", callrefURN)
-	espXmlmc.SetParam("matchType", "exact")
-	espXmlmc.CloseElement("searchFilter")
-	espXmlmc.OpenElement("searchFilter")
-	espXmlmc.SetParam("column", "h_fk_id_r")
-	espXmlmc.SetParam("value", callrefURN)
-	espXmlmc.SetParam("matchType", "exact")
-	espXmlmc.CloseElement("searchFilter")
-	browse, err := espXmlmc.Invoke("data", "entityBrowseRecords2")
-	if err != nil {
-		espLogger("Call to entityBrowseRecords2 failed when returning asset links for "+callref, "error")
-		color.Red("Call to entityBrowseRecords2 failed when returning asset links for " + callref)
-		return nil
-	}
-	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
-	if err != nil {
-		espLogger("Unmarshal of entityBrowseRecords2 failed when returning asset links for "+callref, "error")
-		color.Red("Unmarshal of entityBrowseRecords2 failed when returning asset links for " + callref)
-		return nil
-	}
-	if xmlRespon.MethodResult != "ok" {
-		espLogger("entityBrowseRecords2 was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
-		color.Red("entityBrowseRecords2 was unsuccessful: " + xmlRespon.State.ErrorRet)
-		return nil
-	}
-	return xmlRespon.Params.RecordIDs
-}
-
 //getRequestWorkflow - take a call reference, get all associated rBPM workflow ID
 func getRequestWorkflow(callRef string) string {
 	returnWorkflowID := ""
-	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
+	espXmlmc.SetParam("application", appSM)
 	espXmlmc.SetParam("entity", "Requests")
 	espXmlmc.SetParam("keyValue", callRef)
 	browse, err := espXmlmc.Invoke("data", "entityGetRecord")
 	if err != nil {
-		espLogger("Call to entityGetRecord failed when attepmting to return request ["+callRef+"]: "+fmt.Sprintf("%s", err), "error")
-		color.Red("Call to entityGetRecord failed when attepmting to return request [" + callRef + "]")
+		espLogger("entityGetRecord:Invoke:Requests:"+callRef+":"+err.Error(), "error")
+		color.Red("entityGetRecord Invoke failed for Requests:" + callRef + ":" + err.Error())
 		return ""
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(browse), &xmlRespon)
 	if err != nil {
-		espLogger("Call to entityGetRecord failed when attepmting to return request ["+callRef+"]: "+fmt.Sprintf("%s", err), "error")
-		color.Red("Call to entityGetRecord failed when attepmting to return request [" + callRef + "]")
+		espLogger("entityGetRecord:Unmarshal:Requests:"+callRef+":"+err.Error(), "error")
+		color.Red("entityGetRecord Unmarshal failed for Requests:" + callRef + ":" + err.Error())
 		return ""
 	}
 	if xmlRespon.MethodResult != "ok" {
-		espLogger("Call to entityGetRecord failed when attepmting to return request ["+callRef+"]: "+fmt.Sprintf("%s", err), "error")
-		color.Red("Call to entityGetRecord failed when attepmting to return request [" + callRef + "]")
+		espLogger("entityGetRecord:Unmarshal:Requests:"+callRef+":"+xmlRespon.State.ErrorRet, "error")
+		color.Red("entityGetRecord Unmarshal failed for Requests:" + callRef + ":" + xmlRespon.State.ErrorRet)
 		return ""
 	}
 	returnWorkflowID = xmlRespon.Params.BPMID
 	return returnWorkflowID
-}
-
-//getSystemTimerIDs - take call reference, return array of System Timers that are associated with it
-func getSystemTimerIDs(callRef string) []dataStruct {
-	//Use a stored query to get timer IDs
-	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
-	espXmlmc.SetParam("queryName", "getRequestSystemTimers")
-	espXmlmc.OpenElement("queryParams")
-	espXmlmc.SetParam("requestId", callRef)
-	espXmlmc.CloseElement("queryParams")
-	browse, err := espXmlmc.Invoke("data", "queryExec")
-	if err != nil {
-		espLogger("Call to queryExec [getRequestSystemTimers] failed for Request "+callRef+" : "+fmt.Sprintf("%s", err), "error")
-		color.Red("Call to queryExec [getRequestSystemTimers] failed for Request " + callRef)
-		return nil
-	}
-	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
-	if err != nil {
-		espLogger("Unmarshal of queryExec [getRequestSystemTimers] data failed for Request "+callRef+" : "+fmt.Sprintf("%s", err), "error")
-		color.Red("Unmarshal of queryExec [getRequestSystemTimers] data failed for Request " + callRef)
-		return nil
-	}
-	if xmlRespon.MethodResult != "ok" {
-		espLogger("queryExec [getRequestSystemTimers] was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
-		color.Red("queryExec [getRequestSystemTimers] was unsuccessful: " + xmlRespon.State.ErrorRet)
-		return nil
-	}
-	return xmlRespon.Params.RecordIDs
-}
-
-//getRequestBPMEvents - take call reference, return array of System Timers that are associated with it
-func getRequestBPMEvents(callRef string) []dataStruct {
-	//Use a stored query to get request IDs
-	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
-	espXmlmc.SetParam("queryName", "getRequestBPMEvents")
-	espXmlmc.OpenElement("queryParams")
-	espXmlmc.SetParam("inRequestId", callRef)
-	espXmlmc.CloseElement("queryParams")
-	browse, err := espXmlmc.Invoke("data", "queryExec")
-	if err != nil {
-		espLogger("Call to queryExec [getRequestBPMEvents] failed for Request "+callRef+" : "+fmt.Sprintf("%s", err), "error")
-		color.Red("Call to queryExec [getRequestBPMEvents] failed for Request " + callRef)
-		return nil
-	}
-	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
-	if err != nil {
-		espLogger("Unmarshal of queryExec [getRequestBPMEvents] data failed for Request "+callRef+" : "+fmt.Sprintf("%s", err), "error")
-		color.Red("Unmarshal of queryExec [getRequestBPMEvents] data failed for Request " + callRef)
-		return nil
-	}
-	if xmlRespon.MethodResult != "ok" {
-		espLogger("queryExec [getRequestBPMEvents] was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
-		color.Red("queryExec [getRequestBPMEvents] was unsuccessful: " + xmlRespon.State.ErrorRet)
-		return nil
-	}
-	return xmlRespon.Params.RecordIDs
 }
 
 func getAppList() ([]appsStruct, bool) {
@@ -504,81 +407,93 @@ func getAppList() ([]appsStruct, bool) {
 	returnBool := false
 	apps, err := espXmlmc.Invoke("admin", "getApplicationList")
 	if err != nil {
-		espLogger("Call to admin::getApplicationList error: "+fmt.Sprintf("%v", err), "error")
-		color.Red("Call to admin::getApplicationList error:", err)
+		espLogger("getApplicationList:Invoke:"+err.Error(), "error")
+		color.Red("getApplicationList Invoke failed:" + err.Error())
 		return returnArray, returnBool
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(apps), &xmlRespon)
 	if err != nil {
-		espLogger("Unmarshal of admin::getApplicationList response error: "+fmt.Sprintf("%v", err), "error")
-		color.Red("Unmarshal of admin::getApplicationList response error:", err)
+		espLogger("getApplicationList:Unmarshal:"+err.Error(), "error")
+		color.Red("getApplicationList Unmarshal failed:" + err.Error())
 		return returnArray, returnBool
 	}
 	if xmlRespon.MethodResult != "ok" {
-		espLogger("Response from admin::getApplicationList not ok: "+xmlRespon.State.ErrorRet, "error")
-		color.Red("Response from admin::getApplicationList not ok:", xmlRespon.State.ErrorRet)
+		espLogger("getApplicationList:MethodResult:"+xmlRespon.State.ErrorRet, "error")
+		color.Red("getApplicationList MethodResult failed:" + xmlRespon.State.ErrorRet)
 		return returnArray, returnBool
 	}
-
 	return xmlRespon.Params.Application, true
 }
 
-func getRequestCards(callref string) []dataStruct {
-	//Use entityBrowseRecords2 to get Board Manager cards against requests
-	espXmlmc.SetParam("application", "com.hornbill.boardmanager")
-	espXmlmc.SetParam("entity", "Card")
-	espXmlmc.OpenElement("searchFilter")
-	espXmlmc.SetParam("column", "h_key")
-	espXmlmc.SetParam("value", callref)
-	espXmlmc.SetParam("matchType", "exact")
-	espXmlmc.CloseElement("searchFilter")
+func entityBrowseRecords(application, entity, matchScope string, searchFilters []browseRecordsParamsStruct) []dataStruct {
+	espXmlmc.SetParam("application", application)
+	espXmlmc.SetParam("entity", entity)
+	if matchScope != "" {
+		espXmlmc.SetParam("matchScope", matchScope)
+	}
+	var logSearchFilter []string
+	for _, v := range searchFilters {
+		espXmlmc.OpenElement("searchFilter")
+		espXmlmc.SetParam("column", v.Column)
+		espXmlmc.SetParam("value", v.Value)
+		espXmlmc.SetParam("matchType", v.MatchType)
+		espXmlmc.CloseElement("searchFilter")
+		logSearchFilter = append(logSearchFilter, v.Column+" = '"+v.Value+"' ("+v.MatchType+")")
+	}
+	logFilter := strings.Join(logSearchFilter[:], " AND ")
 	browse, err := espXmlmc.Invoke("data", "entityBrowseRecords2")
 	if err != nil {
-		espLogger("Call to entityBrowseRecords2 failed when returning Card IDs for "+callref, "error")
-		color.Red("Call to entityBrowseRecords2 failed when returning Card IDs for " + callref)
+		espLogger("entityBrowseRecords2:Invoke:"+application+":"+entity+":"+logFilter+":"+err.Error(), "error")
+		color.Red("entityBrowseRecords2 Invoke failed for " + application + ":" + entity + ":" + err.Error())
 		return nil
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(browse), &xmlRespon)
 	if err != nil {
-		espLogger("Unmarshal of entityBrowseRecords2 failed when returning Card IDs for "+callref, "error")
-		color.Red("Unmarshal of entityBrowseRecords2 failed when returning Card IDs for " + callref)
+		espLogger("entityBrowseRecords2:Unmarshal:"+application+":"+entity+":"+logFilter+":"+err.Error(), "error")
+		color.Red("entityBrowseRecords2 Unmarshal failed for " + application + ":" + entity + ":" + err.Error())
 		return nil
 	}
 	if xmlRespon.MethodResult != "ok" {
-		espLogger("entityBrowseRecords2 was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
-		color.Red("entityBrowseRecords2 was unsuccessful: " + xmlRespon.State.ErrorRet)
+		espLogger("entityBrowseRecords2:MethodResult:"+application+":"+entity+":"+logFilter+":"+xmlRespon.State.ErrorRet, "error")
+		color.Red("entityBrowseRecords2 MethodResult failed for " + application + ":" + entity + ":" + xmlRespon.State.ErrorRet)
 		return nil
 	}
 	return xmlRespon.Params.RecordIDs
 }
 
-func getRequestSLMEvents(callref string) []dataStruct {
-	//Use entityBrowseRecords2 to get Request SLM Events entity records
-	espXmlmc.SetParam("application", "com.hornbill.servicemanager")
-	espXmlmc.SetParam("entity", "RequestSLMEvt")
-	espXmlmc.OpenElement("searchFilter")
-	espXmlmc.SetParam("column", "h_request_id")
-	espXmlmc.SetParam("value", callref)
-	espXmlmc.SetParam("matchType", "exact")
-	espXmlmc.CloseElement("searchFilter")
-	browse, err := espXmlmc.Invoke("data", "entityBrowseRecords2")
+//queryExec -
+func queryExec(application, queryName string, queryParams []queryParamsStruct) []dataStruct {
+	//Use a stored query to get timer IDs
+	espXmlmc.SetParam("application", application)
+	espXmlmc.SetParam("queryName", queryName)
+	espXmlmc.OpenElement("queryParams")
+	var queryKeyVal []string
+	for _, param := range queryParams {
+		espXmlmc.SetParam(param.Name, param.Value)
+		queryKeyVal = append(queryKeyVal, param.Name+":"+param.Value)
+	}
+
+	logKeyVals := strings.Join(queryKeyVal[:], "|")
+
+	espXmlmc.CloseElement("queryParams")
+	browse, err := espXmlmc.Invoke("data", "queryExec")
 	if err != nil {
-		espLogger("Call to entityBrowseRecords2 failed when returning SLM Events for "+callref, "error")
-		color.Red("Call to entityBrowseRecords2 failed when returning SLM Events for " + callref)
+		espLogger("queryExec:Invoke:"+application+":"+queryName+":"+logKeyVals+":"+err.Error(), "error")
+		color.Red("queryExec Invoke failed for " + application + ":" + queryName + ":" + err.Error())
 		return nil
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(browse), &xmlRespon)
 	if err != nil {
-		espLogger("Unmarshal of entityBrowseRecords2 failed when returning SLM Events for "+callref, "error")
-		color.Red("Unmarshal of entityBrowseRecords2 failed when returning SLM Events for " + callref)
+		espLogger("queryExec:Unmarshal:"+application+":"+queryName+":"+logKeyVals+":"+err.Error(), "error")
+		color.Red("queryExec Unmarshal failed for " + application + ":" + queryName + ":" + err.Error())
 		return nil
 	}
 	if xmlRespon.MethodResult != "ok" {
-		espLogger("entityBrowseRecords2 was unsuccessful for SLM Events: "+xmlRespon.State.ErrorRet, "error")
-		color.Red("entityBrowseRecords2 was unsuccessful for SLM Events: " + xmlRespon.State.ErrorRet)
+		espLogger("queryExec:MethodResult:"+application+":"+queryName+":"+logKeyVals+":"+xmlRespon.State.ErrorRet, "error")
+		color.Red("queryExec MethodResult failed for " + application + ":" + queryName + ":" + xmlRespon.State.ErrorRet)
 		return nil
 	}
 	return xmlRespon.Params.RecordIDs
