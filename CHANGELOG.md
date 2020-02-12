@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.11.1 (February 12tj, 2020)
+
+Change:
+
+- Refactored system & BPM event timer delete order
+
 ## 1.11.0 (September 27th, 2019)
 
 Features:

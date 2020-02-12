@@ -38,18 +38,6 @@ func deleteRecords(entity string, records []dataStruct) {
 		//Go through requests, and delete any associated records
 		for _, callRef := range records {
 
-			//-- System Timers
-			var stQueryParams []queryParamsStruct
-			stQueryParams = append(stQueryParams, queryParamsStruct{Name: "requestId", Value: callRef.RequestID})
-			sysTimerIDs := queryExec(appSM, "getRequestSystemTimers", stQueryParams)
-			if len(sysTimerIDs) != 0 {
-				for _, timerID := range sysTimerIDs {
-					if timerID.TimerID != "<nil>" && timerID.TimerID != "" {
-						deleteTimer(timerID.TimerID)
-					}
-				}
-			}
-
 			//-- BPM Events
 			var bpmQueryParams []queryParamsStruct
 			bpmQueryParams = append(bpmQueryParams, queryParamsStruct{Name: "inRequestId", Value: callRef.RequestID})
@@ -61,6 +49,18 @@ func deleteRecords(entity string, records []dataStruct) {
 					}
 					if timerRecord.BPMTimerID != "<nil>" && timerRecord.BPMTimerID != "" {
 						deleteTimer(timerRecord.BPMTimerID)
+					}
+				}
+			}
+
+			//-- System Timers
+			var stQueryParams []queryParamsStruct
+			stQueryParams = append(stQueryParams, queryParamsStruct{Name: "requestId", Value: callRef.RequestID})
+			sysTimerIDs := queryExec(appSM, "getRequestSystemTimers", stQueryParams)
+			if len(sysTimerIDs) != 0 {
+				for _, timerID := range sysTimerIDs {
+					if timerID.TimerID != "<nil>" && timerID.TimerID != "" {
+						deleteTimer(timerID.TimerID)
 					}
 				}
 			}
