@@ -348,7 +348,7 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 			espXmlmc.SetParam("taskStatus", k)
 		}
 
-		browse, errTask := espXmlmc.Invoke("apps/"+appSM+"/Task", "getEntityTasks")
+		browse, errTask := espXmlmc.Invoke("apps/com.hornbill.core/Task", "getEntityTasks")
 		if errTask != nil {
 			espLogger("getEntityTasks:taskStatus:Invoke:Request:"+callRef+":"+errTask.Error(), "error")
 			color.Red("getEntityTasks Invoke failed for Request:" + callRef + ":" + errTask.Error())

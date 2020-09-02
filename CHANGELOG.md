@@ -1,6 +1,12 @@
 # CHANGELOG
 
-## 1.11.1 (February 12tj, 2020)
+## 1.11.2 (September 2nd, 2020)
+
+Fix:
+
+- Fixed issue where request tasks were not being deleted
+
+## 1.11.1 (February 12th, 2020)
 
 Change:
 
