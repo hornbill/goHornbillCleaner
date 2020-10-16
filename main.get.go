@@ -154,6 +154,58 @@ func getRecordCount(table string) int {
 	return xmlRespon.Params.RecordCount
 }
 
+func getAssetCount() int {
+	//Use a stored query to get asset IDs
+	espXmlmc.SetParam("application", appSM)
+	espXmlmc.SetParam("queryName", "Asset.getAssetsFiltered")
+	espXmlmc.OpenElement("queryParams")
+	espXmlmc.SetParam("resultType", "count")
+	if cleanerConf.AssetClassID != "" {
+		espXmlmc.SetParam("assetClass", cleanerConf.AssetClassID)
+	}
+	if cleanerConf.AssetTypeID > 0 {
+		espXmlmc.SetParam("assetType", strconv.Itoa(cleanerConf.AssetTypeID))
+	}
+	if len(cleanerConf.AssetFilters) > 0 {
+		var filterList []filterStuct
+		for _, v := range cleanerConf.AssetFilters {
+			filter := filterStuct{}
+			filter.ColumnName = v.ColumnName
+			filter.ColumnValue = v.ColumnValue
+			filter.Operator = v.Operator
+			filter.IsGeneralProperty = v.IsGeneralProperty
+			filterList = append(filterList, filter)
+		}
+		filters, err := json.Marshal(filterList)
+		if err != nil {
+			espLogger("getAssetCount:Filters:Marshal:"+err.Error(), "error")
+			color.Red("getAssetCount could not marshal filters into JSON: " + err.Error())
+			return 0
+		}
+		espXmlmc.SetParam("filters", string(filters))
+	}
+	espXmlmc.CloseElement("queryParams")
+	browse, err := espXmlmc.Invoke("data", "queryExec")
+	if err != nil {
+		espLogger("count:queryExec:Invoke:"+appSM+":Asset.getAssetsFiltered:count:"+err.Error(), "error")
+		color.Red("queryExec Invoke failed to get count for " + appSM + ":Asset.getAssetsFiltered:count:" + err.Error())
+		return 0
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	if err != nil {
+		espLogger("queryExec:Unmarshal:"+appSM+":Asset.getAssetsFiltered:count:"+err.Error(), "error")
+		color.Red("queryExec Unmarshal failed to get count for " + appSM + ":Asset.getAssetsFiltered:count:" + err.Error())
+		return 0
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("queryExec:MethodResult:"+appSM+":Asset.getAssetsFiltered:count:"+xmlRespon.State.ErrorRet, "error")
+		color.Red("queryExec MethodResult failed to get count for " + appSM + ":Asset.getAssetsFiltered:count:" + xmlRespon.State.ErrorRet)
+		return 0
+	}
+	return xmlRespon.Params.RecordIDs[0].Count
+}
+
 //getRecordIDs - returns an array of records for deletion
 func getRecordIDs(entity string) []dataStruct {
 	if currentBlock <= totalBlocks {
@@ -247,11 +299,31 @@ func getRecordIDs(entity string) []dataStruct {
 		espXmlmc.SetParam("application", appSM)
 		espXmlmc.SetParam("queryName", "Asset.getAssetsFiltered")
 		espXmlmc.OpenElement("queryParams")
+		espXmlmc.SetParam("resultType", "data")
 		if cleanerConf.AssetClassID != "" {
 			espXmlmc.SetParam("assetClass", cleanerConf.AssetClassID)
 		}
 		if cleanerConf.AssetTypeID > 0 {
 			espXmlmc.SetParam("assetType", strconv.Itoa(cleanerConf.AssetTypeID))
+		}
+		if len(cleanerConf.AssetFilters) > 0 {
+			var filterList []filterStuct
+			for _, v := range cleanerConf.AssetFilters {
+				filter := filterStuct{}
+				filter.ColumnName = v.ColumnName
+				filter.ColumnValue = v.ColumnValue
+				filter.Operator = v.Operator
+				filter.IsGeneralProperty = v.IsGeneralProperty
+				filterList = append(filterList, filter)
+			}
+			filters, err := json.Marshal(filterList)
+			if err != nil {
+				espLogger("getRecordIds:Filters:Marshal:"+err.Error(), "error")
+				color.Red("getRecordIds could not marshal filters into JSON: " + err.Error())
+				return nil
+
+			}
+			espXmlmc.SetParam("filters", string(filters))
 		}
 		if !configDryRun || (configDryRun && currentBlock == 1) {
 			espXmlmc.SetParam("rowstart", "0")

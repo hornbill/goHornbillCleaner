@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	version               = "1.11.2"
+	version               = "1.12.0"
 	appSM                 = "com.hornbill.servicemanager"
 	appBM                 = "com.hornbill.boardmanager"
 	appCM                 = "com.hornbill.configurationmanager"
@@ -74,6 +74,7 @@ type dataStruct struct {
 	BPMTimerID        string `xml:"h_fk_timerid"`
 	CardID            string `xml:"h_id"`
 	TimerID           string `xml:"h_pk_tid"`
+	Count             int    `xml:"count"`
 }
 
 type taskStruct struct {
@@ -100,6 +101,7 @@ type cleanerConfStruct struct {
 	CleanAssets           bool
 	AssetClassID          string
 	AssetTypeID           int
+	AssetFilters          []assetFilterStuct
 	CleanUsers            bool
 	Users                 []string
 }
@@ -113,4 +115,18 @@ type browseRecordsParamsStruct struct {
 	Column    string
 	Value     string
 	MatchType string
+}
+
+type assetFilterStuct struct {
+	ColumnName        string
+	ColumnValue       string
+	Operator          string
+	IsGeneralProperty bool
+}
+
+type filterStuct struct {
+	ColumnName        string `json:"column_name"`
+	ColumnValue       string `json:"column_value"`
+	Operator          string `json:"operator"`
+	IsGeneralProperty bool   `json:"isGeneralProperty"`
 }

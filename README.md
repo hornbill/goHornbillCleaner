@@ -55,7 +55,15 @@ Example JSON File:
       ],
       "CleanAssets": false,
       "AssetClassID": "",
-	    "AssetTypeID": 0,
+      "AssetTypeID": 0,
+      "AssetFilters": [
+        {
+          "column_name": "h_name",
+          "column_value": "YourAssetName",
+          "operator": "Equals",
+          "isGeneralProperty": true
+        }
+      ],
       "CleanUsers":true,
       "Users":[
           "userIdOne",
@@ -96,6 +104,28 @@ Example JSON File:
 - CleanAssets : Set to true to remove all Assets (and related entity data) from a Hornbill instance
 - AssetClassID: Filter assets for deletetion by a single asset class ID (basic, computer, computerPeripheral, mobileDevice, printer, software, telecoms)
 - AssetTypeID: Filter assets for deletion by a single asset type ID - the primary key value of the asset type from the database. Can also be found in the URL when viewing an asset type, 18 in this example: https://live.hornbill.com/yourinstanceid/servicemanager/asset/type/view/18/ 
+- AssetFilters: Array of filters to apply to the query when returning assets to delete. Each object in the array should contain:
+  - ColumnName: The nama of the column in the assets general or extended table;
+  - ColumnValue: The value to filter by;
+  - Operator: The operator to apply, can be one of:
+    - Empty - column is null or an empty string;
+    - Equals - column equals the provided value;
+    - NotEquals - column does not equal the provided value;
+    - Greater - column value is greater than the provided value;
+    - Less - column value is less than than the provided value;
+    - LastXDays - date columns, value in the last X days where X is provided in ColumnValue;
+    - LastMonth - date columns, value in the last month;
+    - PreviousMonth - date columns, value in the previous month;
+    - ThisMonth - date columns, value this month;
+    - LastWeek - date columns, value last week
+    - Yesterday - date columns, value yesterday;
+    - Today - date columns, value today;
+    - Before - date columns, value before the datetime value provided in ColumnValue;
+    - After - date columns, value after the datetime value provided in ColumnValue;
+    - BeforeXDays - date columns, before the number of days provided in ColumnValue;
+    - Regex - column matches the regular expression provided in ColumnValue;
+    - NotRegex - column doesn't match the regular expression provided in ColumnValue;
+  - IsGeneralProperty: If true, the column exists in the general assets table. If false, the column is in the extended assets table;
 - CleanUsers : Set to true to remove all Users listed in the Users array
 - Users : Array of strings, contains a list of User IDs to remove from your Hornbill instance
 

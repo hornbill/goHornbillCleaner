@@ -12,6 +12,7 @@
 	"CleanAssets": false,
 	"AssetClassID": "",
 	"AssetTypeID": 0,
+	"AssetFilters": [],
 	"CleanUsers":false,
 	"Users":[]
 }

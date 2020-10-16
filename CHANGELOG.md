@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.12.0 (October 16th, 2020)
+
+Change:
+
+- Added support to provide complex filters for deletion of assets
+
 ## 1.11.2 (September 2nd, 2020)
 
 Fix:

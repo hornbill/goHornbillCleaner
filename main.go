@@ -230,7 +230,7 @@ func processAssets() {
 	//Process Asset Records
 	if cleanerConf.CleanAssets {
 		configManagerInstalled = isAppInstalled(appCM, minConfigManagerBuild)
-		assetCount := getRecordCount("h_cmdb_assets")
+		assetCount := getAssetCount()
 		if assetCount > 0 {
 			currentBlock = 1
 			assetBlocks := float64(assetCount) / float64(configBlockSize)
