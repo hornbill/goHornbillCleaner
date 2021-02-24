@@ -1,24 +1,30 @@
 # CHANGELOG
 
+## 1.12.1 (February 24th, 2020)
+
+Change:
+
+- Upped the request timeout from 30 to 180 seconds
+
 ## 1.12.0 (October 16th, 2020)
 
 Change:
 
 - Added support to provide complex filters for deletion of assets
 
-## 1.11.2 (September 2nd, 2020)
+## 1.11.2 (September 2nd, 2020)
 
 Fix:
 
 - Fixed issue where request tasks were not being deleted
 
-## 1.11.1 (February 12th, 2020)
+## 1.11.1 (February 12th, 2020)
 
 Change:
 
 - Refactored system & BPM event timer delete order
 
-## 1.11.0 (September 27th, 2019)
+## 1.11.0 (September 27th, 2019)
 
 Features:
 
@@ -26,7 +32,7 @@ Features:
 - Refactored to remove duplicate code
 - Improved log output consistency
 
-## 1.10.0 (July 12th, 2019)
+## 1.10.0 (July 12th, 2019)
 
 Features:
 

@@ -477,6 +477,7 @@ func getRequestWorkflow(callRef string) string {
 func getAppList() ([]appsStruct, bool) {
 	var returnArray []appsStruct
 	returnBool := false
+	espXmlmc.SetTimeout(180)
 	apps, err := espXmlmc.Invoke("admin", "getApplicationList")
 	if err != nil {
 		espLogger("getApplicationList:Invoke:"+err.Error(), "error")
