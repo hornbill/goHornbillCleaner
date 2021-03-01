@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	version               = "1.12.1"
+	version               = "1.13.0"
 	appSM                 = "com.hornbill.servicemanager"
 	appBM                 = "com.hornbill.boardmanager"
 	appCM                 = "com.hornbill.configurationmanager"

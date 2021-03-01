@@ -272,10 +272,11 @@ func getRecordIDs(entity string) []dataStruct {
 		}
 
 		espXmlmc.CloseElement("queryParams")
-
+		requestXML := espXmlmc.GetParam()
 		browse, err := espXmlmc.Invoke("data", "queryExec")
 		if err != nil {
 			espLogger("queryExec:Invoke:"+appSM+":_listRequestsOfType:"+err.Error(), "error")
+			espLogger(requestXML, "error")
 			color.Red("queryExec Invoke failed for " + appSM + ":_listRequestsOfType:" + err.Error())
 			return nil
 		}
@@ -283,11 +284,14 @@ func getRecordIDs(entity string) []dataStruct {
 		err = xml.Unmarshal([]byte(browse), &xmlRespon)
 		if err != nil {
 			espLogger("queryExec:Unmarshal:"+appSM+":_listRequestsOfType:"+err.Error(), "error")
+			espLogger(requestXML, "error")
+			espLogger(browse, "error")
 			color.Red("queryExec Unmarshal failed for " + appSM + ":_listRequestsOfType:" + err.Error())
 			return nil
 		}
 		if xmlRespon.MethodResult != "ok" {
 			espLogger("queryExec:MethodResult:"+appSM+":_listRequestsOfType:"+xmlRespon.State.ErrorRet, "error")
+			espLogger(requestXML, "error")
 			color.Red("queryExec MethodResult failed for " + appSM + ":_listRequestsOfType:" + xmlRespon.State.ErrorRet)
 			return nil
 		}
@@ -332,9 +336,11 @@ func getRecordIDs(entity string) []dataStruct {
 		}
 		espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
 		espXmlmc.CloseElement("queryParams")
+		requestXML := espXmlmc.GetParam()
 		browse, err := espXmlmc.Invoke("data", "queryExec")
 		if err != nil {
 			espLogger("queryExec:Invoke:"+appSM+":Asset.getAssetsFiltered:"+err.Error(), "error")
+			espLogger(requestXML, "error")
 			color.Red("queryExec Invoke failed for " + appSM + ":Asset.getAssetsFiltered:" + err.Error())
 			return nil
 		}
@@ -342,11 +348,14 @@ func getRecordIDs(entity string) []dataStruct {
 		err = xml.Unmarshal([]byte(browse), &xmlRespon)
 		if err != nil {
 			espLogger("queryExec:Unmarshal:"+appSM+":Asset.getAssetsFiltered:"+err.Error(), "error")
+			espLogger(requestXML, "error")
+			espLogger(browse, "error")
 			color.Red("queryExec Unmarshal failed for " + appSM + ":Asset.getAssetsFiltered:" + err.Error())
 			return nil
 		}
 		if xmlRespon.MethodResult != "ok" {
 			espLogger("queryExec:MethodResult:"+appSM+":Asset.getAssetsFiltered:"+xmlRespon.State.ErrorRet, "error")
+			espLogger(requestXML, "error")
 			color.Red("queryExec MethodResult failed for " + appSM + ":Asset.getAssetsFiltered:" + xmlRespon.State.ErrorRet)
 			return nil
 		}
@@ -364,9 +373,11 @@ func getRecordIDs(entity string) []dataStruct {
 	}
 	espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
 	espXmlmc.CloseElement("queryParams")
+	requestXML := espXmlmc.GetParam()
 	browse, err := espXmlmc.Invoke("data", "queryExec")
 	if err != nil {
 		espLogger("Call to queryExec ["+entity+"] failed when returning block "+strconv.Itoa(currentBlock), "error")
+		espLogger(requestXML, "error")
 		color.Red("Call to queryExec [" + entity + "] failed when returning block " + strconv.Itoa(currentBlock))
 		return nil
 	}
@@ -374,11 +385,14 @@ func getRecordIDs(entity string) []dataStruct {
 	err = xml.Unmarshal([]byte(browse), &xmlRespon)
 	if err != nil {
 		espLogger("Unmarshal of queryExec ["+entity+"] data failed when returning block "+strconv.Itoa(currentBlock), "error")
+		espLogger(requestXML, "error")
+		espLogger(browse, "error")
 		color.Red("Unmarshal of queryExec [" + entity + "] data failed when returning block " + strconv.Itoa(currentBlock))
 		return nil
 	}
 	if xmlRespon.MethodResult != "ok" {
 		espLogger("AssetLinks queryExec was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
+		espLogger(requestXML, "error")
 		color.Red("AssetLinks queryExec was unsuccessful: " + xmlRespon.State.ErrorRet)
 		return nil
 	}
