@@ -1,12 +1,13 @@
 # CHANGELOG
 
-## 1.13.0 (March 1st, 2020)
+## 1.13.0 (March 1st, 2021)
 
 Change:
 
 - Additional logging around returning records for deletion
+- Added string sanitizer to remove illegal character codes
 
-## 1.12.1 (February 24th, 2020)
+## 1.12.1 (February 24th, 2021)
 
 Change:
 

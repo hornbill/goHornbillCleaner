@@ -281,7 +281,7 @@ func getRecordIDs(entity string) []dataStruct {
 			return nil
 		}
 		var xmlRespon xmlmcResponse
-		err = xml.Unmarshal([]byte(browse), &xmlRespon)
+		err = xml.Unmarshal([]byte(string([]rune(browse))), &xmlRespon)
 		if err != nil {
 			espLogger("queryExec:Unmarshal:"+appSM+":_listRequestsOfType:"+err.Error(), "error")
 			espLogger(requestXML, "error")
@@ -345,7 +345,7 @@ func getRecordIDs(entity string) []dataStruct {
 			return nil
 		}
 		var xmlRespon xmlmcResponse
-		err = xml.Unmarshal([]byte(browse), &xmlRespon)
+		err = xml.Unmarshal([]byte(string([]rune(browse))), &xmlRespon)
 		if err != nil {
 			espLogger("queryExec:Unmarshal:"+appSM+":Asset.getAssetsFiltered:"+err.Error(), "error")
 			espLogger(requestXML, "error")
@@ -382,7 +382,7 @@ func getRecordIDs(entity string) []dataStruct {
 		return nil
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	err = xml.Unmarshal([]byte(string([]rune(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("Unmarshal of queryExec ["+entity+"] data failed when returning block "+strconv.Itoa(currentBlock), "error")
 		espLogger(requestXML, "error")
