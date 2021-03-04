@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.13.1 (March 4th, 2021)
+
+Change:
+
+- Pushed CLI errors to instance log to aid in debugging
+
 ## 1.13.0 (March 1st, 2021)
 
 Change:

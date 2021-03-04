@@ -40,17 +40,24 @@ func main() {
 	espXmlmc = apiLib.NewXmlmcInstance(configInstance)
 	espXmlmc.SetAPIKey(configAPIKey)
 
-	//Load the configuration file
-	cleanerConf = loadConfig()
-
 	espLogger("********** Cleaner Utility Started **********", "notice")
 	defer espLogger("********** Cleaner Utility Completed **********", "notice")
+
+	var err error
+	//Load the configuration file
+	cleanerConf, err = loadConfig()
+	if err != nil {
+		color.Red("Error decoding configuration file " + configFileName + " : " + err.Error())
+		espLogger("Error decoding configuration file "+configFileName+" : "+err.Error(), "error")
+		return
+	}
 
 	//Ask if we want to delete before continuing
 	fmt.Println("")
 	fmt.Println("===== Hornbill Cleaner Utility v" + version + " =====")
 	if !cleanerConf.CleanRequests && !cleanerConf.CleanAssets && !cleanerConf.CleanUsers {
 		color.Red("No entity data has been specified for cleansing in " + configFileName)
+		espLogger("No entity data has been specified for cleansing in "+configFileName, "error")
 		return
 	}
 	fmt.Println("")
@@ -81,10 +88,12 @@ func main() {
 	if !configSkipPrompts {
 		fmt.Println("Are you sure you want to permanently delete these records? (yes/no):")
 		if !hornbillHelpers.ConfirmResponse("") {
+			espLogger("Confirmation Prompts Rejected", "info")
 			return
 		}
 		color.Red("Are you absolutely sure? Type in the word 'delete' to confirm...")
 		if !hornbillHelpers.ConfirmResponse("delete") {
+			espLogger("Confirmation Prompts Rejected", "info")
 			return
 		}
 		espLogger("Confirmation Prompts Accepted", "info")
@@ -310,7 +319,7 @@ func getLowerInt(a, b int) int {
 }
 
 //loadConfig - loads configuration file in to struct
-func loadConfig() cleanerConfStruct {
+func loadConfig() (cleanerConfStruct, error) {
 	cwd, _ := os.Getwd()
 	configurationFilePath := cwd + "/" + configFileName
 	if _, fileCheckErr := os.Stat(configurationFilePath); os.IsNotExist(fileCheckErr) {
@@ -324,10 +333,7 @@ func loadConfig() cleanerConfStruct {
 	conf := cleanerConfStruct{}
 
 	err := decoder.Decode(&conf)
-	if err != nil {
-		color.Red("Error decoding configuration file!")
-	}
-	return conf
+	return conf, err
 }
 
 // espLogger -- Log to ESP
