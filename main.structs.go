@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	version               = "1.13.1"
+	version               = "1.14.0"
 	appSM                 = "com.hornbill.servicemanager"
 	appBM                 = "com.hornbill.boardmanager"
 	appCM                 = "com.hornbill.configurationmanager"
@@ -91,6 +91,7 @@ type appsStruct struct {
 type cleanerConfStruct struct {
 	CleanRequests         bool
 	RequestServices       []int
+	RequestCatalogItems   []int
 	RequestStatuses       []string
 	RequestTypes          []string
 	RequestLogDateFrom    string

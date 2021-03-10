@@ -7,10 +7,18 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/fatih/color"
 	hornbillHelpers "github.com/hornbill/goHornbillHelpers"
 )
+
+func printOnly(r rune) rune {
+	if unicode.IsPrint(r) {
+		return r
+	}
+	return -1
+}
 
 //getRecordCount - takes a table name, returns the total number of records in the entity
 func getRecordCount(table string) int {
@@ -140,7 +148,7 @@ func getRecordCount(table string) int {
 		return 0
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("getRecordCount:Unmarshal:"+table+":"+strQuery+":"+err.Error(), "error")
 		color.Red("getRecordCount Unmarshal failed for " + table + ":" + err.Error())
@@ -192,7 +200,7 @@ func getAssetCount() int {
 		return 0
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("queryExec:Unmarshal:"+appSM+":Asset.getAssetsFiltered:count:"+err.Error(), "error")
 		color.Red("queryExec Unmarshal failed to get count for " + appSM + ":Asset.getAssetsFiltered:count:" + err.Error())
@@ -281,7 +289,7 @@ func getRecordIDs(entity string) []dataStruct {
 			return nil
 		}
 		var xmlRespon xmlmcResponse
-		err = xml.Unmarshal([]byte(string([]rune(browse))), &xmlRespon)
+		err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 		if err != nil {
 			espLogger("queryExec:Unmarshal:"+appSM+":_listRequestsOfType:"+err.Error(), "error")
 			espLogger(requestXML, "error")
@@ -345,7 +353,8 @@ func getRecordIDs(entity string) []dataStruct {
 			return nil
 		}
 		var xmlRespon xmlmcResponse
-		err = xml.Unmarshal([]byte(string([]rune(browse))), &xmlRespon)
+
+		err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 		if err != nil {
 			espLogger("queryExec:Unmarshal:"+appSM+":Asset.getAssetsFiltered:"+err.Error(), "error")
 			espLogger(requestXML, "error")
@@ -382,7 +391,7 @@ func getRecordIDs(entity string) []dataStruct {
 		return nil
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(string([]rune(browse))), &xmlRespon)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("Unmarshal of queryExec ["+entity+"] data failed when returning block "+strconv.Itoa(currentBlock), "error")
 		espLogger(requestXML, "error")
@@ -411,7 +420,7 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 		return nil
 	}
 	var xmlResponCount xmlmcTaskResponse
-	err = xml.Unmarshal([]byte(getCounters), &xmlResponCount)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(getCounters))), &xmlResponCount)
 	if err != nil {
 		espLogger("getEntityTasks:Unmarshal:Request:"+callRef+":"+err.Error(), "error")
 		color.Red("getEntityTasks Unmarshal failed for Request:" + callRef + ":" + err.Error())
@@ -441,7 +450,7 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 			return nil
 		}
 		var xmlRespon xmlmcTaskResponse
-		errTask = xml.Unmarshal([]byte(browse), &xmlRespon)
+		errTask = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 		if errTask != nil {
 			espLogger("getEntityTasks:taskStatus:Unmarshal:Request:"+callRef+":"+errTask.Error(), "error")
 			color.Red("getEntityTasks Unmarshal failed for Request:" + callRef + ":" + errTask.Error())
@@ -473,7 +482,7 @@ func getRequestWorkflow(callRef string) string {
 		return ""
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("entityGetRecord:Unmarshal:Requests:"+callRef+":"+err.Error(), "error")
 		color.Red("entityGetRecord Unmarshal failed for Requests:" + callRef + ":" + err.Error())
@@ -499,7 +508,7 @@ func getAppList() ([]appsStruct, bool) {
 		return returnArray, returnBool
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(apps), &xmlRespon)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(apps))), &xmlRespon)
 	if err != nil {
 		espLogger("getApplicationList:Unmarshal:"+err.Error(), "error")
 		color.Red("getApplicationList Unmarshal failed:" + err.Error())
@@ -536,7 +545,7 @@ func entityBrowseRecords(application, entity, matchScope string, searchFilters [
 		return nil
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("entityBrowseRecords2:Unmarshal:"+application+":"+entity+":"+logFilter+":"+err.Error(), "error")
 		color.Red("entityBrowseRecords2 Unmarshal failed for " + application + ":" + entity + ":" + err.Error())
@@ -572,7 +581,7 @@ func queryExec(application, queryName string, queryParams []queryParamsStruct) [
 		return nil
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("queryExec:Unmarshal:"+application+":"+queryName+":"+logKeyVals+":"+err.Error(), "error")
 		color.Red("queryExec Unmarshal failed for " + application + ":" + queryName + ":" + err.Error())

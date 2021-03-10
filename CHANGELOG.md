@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.14.0 (March 10th, 2021)
+
+Change:
+
+- Removal of unsupported unicode characters from response XML
+
 ## 1.13.1 (March 4th, 2021)
 
 Change:

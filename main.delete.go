@@ -183,7 +183,7 @@ func deleteUser(strUser string) {
 		return
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(deleted), &xmlRespon)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(deleted))), &xmlRespon)
 	if err != nil {
 		espLogger("userDelete:Unmarshal:"+strUser+":"+err.Error(), "error")
 		color.Red("userDelete Unmarshal failed for " + strUser + ":" + err.Error())
@@ -207,7 +207,7 @@ func deleteTimer(timerID string) {
 		return
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("timerDelete:Unmarshal:"+timerID+":"+err.Error(), "error")
 		color.Red("timerDelete Unmarshal failed for " + timerID + ":" + err.Error())
@@ -231,7 +231,7 @@ func deleteEvent(eventID string) {
 		return
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("timerEventDelete:Unmarshal:"+eventID+":"+err.Error(), "error")
 		color.Red("timerEventDelete Unmarshal failed for " + eventID + ":" + err.Error())
@@ -255,7 +255,7 @@ func deleteTask(taskID string) {
 		return
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("taskDelete:Unmarshal:"+taskID+":"+err.Error(), "error")
 		color.Red("taskDelete Unmarshal failed for " + taskID + ":" + err.Error())
@@ -279,7 +279,7 @@ func deleteWorkflow(workflowID string) {
 		return
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("processDelete:Unmarshal:"+workflowID+":"+err.Error(), "error")
 		color.Red("processDelete Unmarshal failed for " + workflowID + ":" + err.Error())
@@ -304,7 +304,7 @@ func deleteCard(cardID string) {
 		return
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("removeCard:Unmarshal:"+cardID+":"+err.Error(), "error")
 		color.Red("removeCard Unmarshal failed for " + cardID + ":" + err.Error())
@@ -336,7 +336,7 @@ func entityDeleteRecords(application, entity string, keyValues []string, preserv
 		return
 	}
 	var xmlRespon xmlmcResponse
-	err = xml.Unmarshal([]byte(browse), &xmlRespon)
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("entityDeleteRecord:Unmarshal:"+application+":"+entity+":"+logKeys+":"+err.Error(), "error")
 		color.Red("entityDeleteRecord Unmarshal failed for " + application + ":" + entity + ":" + logKeys + ":" + err.Error())
