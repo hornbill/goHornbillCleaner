@@ -35,88 +35,112 @@ func deleteRecords(entity string, records []dataStruct) {
 	fmt.Println("Deleting block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " blocks of records from " + entity + " entity. Please wait...")
 
 	if entity == "Requests" {
-		//Go through requests, and delete any associated records
-		for _, callRef := range records {
 
-			//-- BPM Events
-			var bpmQueryParams []queryParamsStruct
-			bpmQueryParams = append(bpmQueryParams, queryParamsStruct{Name: "inRequestId", Value: callRef.RequestID})
-			bpmTimerIDs := queryExec(appSM, "getRequestBPMEvents", bpmQueryParams)
-			if len(bpmTimerIDs) != 0 {
-				for _, timerRecord := range bpmTimerIDs {
-					if timerRecord.BPMEventID != "<nil>" && timerRecord.BPMEventID != "" {
-						deleteEvent(timerRecord.BPMEventID)
-					}
-					if timerRecord.BPMTimerID != "<nil>" && timerRecord.BPMTimerID != "" {
-						deleteTimer(timerRecord.BPMTimerID)
-					}
+		if cleanerConf.KeepRequestsCancelBPTasks {
+
+			for _, callRef := range records {
+				//-- Spawned workflow
+				requestWorkflow := getRequestWorkflow(callRef.RequestID)
+				if requestWorkflow != "<nil>" && requestWorkflow != "" {
+					deleteWorkflow(requestWorkflow)
 				}
-			}
 
-			//-- System Timers
-			var stQueryParams []queryParamsStruct
-			stQueryParams = append(stQueryParams, queryParamsStruct{Name: "requestId", Value: callRef.RequestID})
-			sysTimerIDs := queryExec(appSM, "getRequestSystemTimers", stQueryParams)
-			if len(sysTimerIDs) != 0 {
-				for _, timerID := range sysTimerIDs {
-					if timerID.TimerID != "<nil>" && timerID.TimerID != "" {
-						deleteTimer(timerID.TimerID)
+				//-- Request Tasks
+				requestTasks := getRequestTasks(callRef.RequestID)
+				for _, stateMap := range requestTasks {
+					for _, taskMap := range stateMap {
+						if taskMap.TaskID != "<nil>" && taskMap.TaskID != "" {
+							deleteTask(taskMap.TaskID)
+						}
 					}
 				}
 			}
 
-			//-- SLM Timer Events
-			var slmParams []browseRecordsParamsStruct
-			slmParams = append(slmParams, browseRecordsParamsStruct{Column: "h_request_id", Value: callRef.RequestID, MatchType: "exact"})
-			slmEventIDs := entityBrowseRecords(appSM, "RequestSLMEvt", "", slmParams)
-			if len(slmEventIDs) != 0 {
-				for _, eventRecord := range slmEventIDs {
-					if eventRecord.BPMEventID != "<nil>" && eventRecord.BPMEventID != "" {
-						deleteEvent(eventRecord.BPMEventID)
+		} else {
+
+			//Go through requests, and delete any associated records
+			for _, callRef := range records {
+
+				//-- BPM Events
+				var bpmQueryParams []queryParamsStruct
+				bpmQueryParams = append(bpmQueryParams, queryParamsStruct{Name: "inRequestId", Value: callRef.RequestID})
+				bpmTimerIDs := queryExec(appSM, "getRequestBPMEvents", bpmQueryParams)
+				if len(bpmTimerIDs) != 0 {
+					for _, timerRecord := range bpmTimerIDs {
+						if timerRecord.BPMEventID != "<nil>" && timerRecord.BPMEventID != "" {
+							deleteEvent(timerRecord.BPMEventID)
+						}
+						if timerRecord.BPMTimerID != "<nil>" && timerRecord.BPMTimerID != "" {
+							deleteTimer(timerRecord.BPMTimerID)
+						}
 					}
 				}
-			}
 
-			//-- Spawned workflow
-			requestWorkflow := getRequestWorkflow(callRef.RequestID)
-			if requestWorkflow != "<nil>" && requestWorkflow != "" {
-				deleteWorkflow(requestWorkflow)
-			}
-
-			//-- Request Tasks
-			requestTasks := getRequestTasks(callRef.RequestID)
-			for _, stateMap := range requestTasks {
-				for _, taskMap := range stateMap {
-					if taskMap.TaskID != "<nil>" && taskMap.TaskID != "" {
-						deleteTask(taskMap.TaskID)
+				//-- System Timers
+				var stQueryParams []queryParamsStruct
+				stQueryParams = append(stQueryParams, queryParamsStruct{Name: "requestId", Value: callRef.RequestID})
+				sysTimerIDs := queryExec(appSM, "getRequestSystemTimers", stQueryParams)
+				if len(sysTimerIDs) != 0 {
+					for _, timerID := range sysTimerIDs {
+						if timerID.TimerID != "<nil>" && timerID.TimerID != "" {
+							deleteTimer(timerID.TimerID)
+						}
 					}
 				}
-			}
 
-			//-- Asset Associations
-			var assetLinksParams []browseRecordsParamsStruct
-			callrefURN := "urn:sys:entity:" + appSM + ":Requests:" + callRef.RequestID
-			assetLinksParams = append(assetLinksParams, browseRecordsParamsStruct{Column: "h_fk_id_l", Value: callrefURN, MatchType: "exact"})
-			assetLinksParams = append(assetLinksParams, browseRecordsParamsStruct{Column: "h_fk_id_r", Value: callrefURN, MatchType: "exact"})
-			requestAssets := entityBrowseRecords(appSM, "AssetsLinks", "any", assetLinksParams)
-			for _, linkID := range requestAssets {
-				if linkID.AssetLinkID != "<nil>" && linkID.AssetLinkID != "" {
-					entityDeleteRecords(appSM, "AssetsLinks", []string{linkID.AssetLinkID}, false, false)
-				}
-			}
-
-			//Board Manager Cards
-			if boardManagerInstalled {
-				var cardParams []browseRecordsParamsStruct
-				cardParams = append(cardParams, browseRecordsParamsStruct{Column: "h_key", Value: callRef.RequestID, MatchType: "exact"})
-				requestCards := entityBrowseRecords(appBM, "Card", "", cardParams)
-				for _, cardID := range requestCards {
-					if cardID.CardID != "<nil>" && cardID.CardID != "" {
-						deleteCard(cardID.CardID)
+				//-- SLM Timer Events
+				var slmParams []browseRecordsParamsStruct
+				slmParams = append(slmParams, browseRecordsParamsStruct{Column: "h_request_id", Value: callRef.RequestID, MatchType: "exact"})
+				slmEventIDs := entityBrowseRecords(appSM, "RequestSLMEvt", "", slmParams)
+				if len(slmEventIDs) != 0 {
+					for _, eventRecord := range slmEventIDs {
+						if eventRecord.BPMEventID != "<nil>" && eventRecord.BPMEventID != "" {
+							deleteEvent(eventRecord.BPMEventID)
+						}
 					}
 				}
-			}
 
+				//-- Spawned workflow
+				requestWorkflow := getRequestWorkflow(callRef.RequestID)
+				if requestWorkflow != "<nil>" && requestWorkflow != "" {
+					deleteWorkflow(requestWorkflow)
+				}
+
+				//-- Request Tasks
+				requestTasks := getRequestTasks(callRef.RequestID)
+				for _, stateMap := range requestTasks {
+					for _, taskMap := range stateMap {
+						if taskMap.TaskID != "<nil>" && taskMap.TaskID != "" {
+							deleteTask(taskMap.TaskID)
+						}
+					}
+				}
+
+				//-- Asset Associations
+				var assetLinksParams []browseRecordsParamsStruct
+				callrefURN := "urn:sys:entity:" + appSM + ":Requests:" + callRef.RequestID
+				assetLinksParams = append(assetLinksParams, browseRecordsParamsStruct{Column: "h_fk_id_l", Value: callrefURN, MatchType: "exact"})
+				assetLinksParams = append(assetLinksParams, browseRecordsParamsStruct{Column: "h_fk_id_r", Value: callrefURN, MatchType: "exact"})
+				requestAssets := entityBrowseRecords(appSM, "AssetsLinks", "any", assetLinksParams)
+				for _, linkID := range requestAssets {
+					if linkID.AssetLinkID != "<nil>" && linkID.AssetLinkID != "" {
+						entityDeleteRecords(appSM, "AssetsLinks", []string{linkID.AssetLinkID}, false, false)
+					}
+				}
+
+				//Board Manager Cards
+				if boardManagerInstalled {
+					var cardParams []browseRecordsParamsStruct
+					cardParams = append(cardParams, browseRecordsParamsStruct{Column: "h_key", Value: callRef.RequestID, MatchType: "exact"})
+					requestCards := entityBrowseRecords(appBM, "Card", "", cardParams)
+					for _, cardID := range requestCards {
+						if cardID.CardID != "<nil>" && cardID.CardID != "" {
+							deleteCard(cardID.CardID)
+						}
+					}
+				}
+
+			}
 		}
 	}
 
@@ -159,13 +183,17 @@ func deleteRecords(entity string, records []dataStruct) {
 	for _, v := range records {
 		id := ""
 		if entity == "Requests" {
-			id = v.RequestID
+			if !(cleanerConf.KeepRequestsCancelBPTasks) {
+				id = v.RequestID
+			}
 		} else if entity == "Asset" {
 			id = v.AssetID
 		} else if entity == "AssetsLinks" {
 			id = v.AssetLinkID
 		}
-		idsToDelete = append(idsToDelete, id)
+		if id != "" {
+			idsToDelete = append(idsToDelete, id)
+		}
 	}
 	entityDeleteRecords(appSM, entity, idsToDelete, false, false)
 	color.Green("Block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " deleted.")
@@ -247,50 +275,62 @@ func deleteEvent(eventID string) {
 
 //deleteTask - Takes a Task ID, sends it to task::taskDelete API for safe deletion
 func deleteTask(taskID string) {
+	var fie = "taskDelete"
+	var ver = "deleted"
+	if cleanerConf.KeepRequestsCancelBPTasks {
+		fie = "taskCancel"
+		ver = "cancelled"
+	}
 	espXmlmc.SetParam("taskId", taskID)
-	browse, err := espXmlmc.Invoke("task", "taskDelete")
+	browse, err := espXmlmc.Invoke("task", fie)
 	if err != nil {
-		espLogger("taskDelete:Invoke:"+taskID+":"+err.Error(), "error")
-		color.Red("taskDelete Invoke failed for " + taskID + ":" + err.Error())
+		espLogger(fie+":Invoke:"+taskID+":"+err.Error(), "error")
+		color.Red(fie + " Invoke failed for " + taskID + ":" + err.Error())
 		return
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
-		espLogger("taskDelete:Unmarshal:"+taskID+":"+err.Error(), "error")
-		color.Red("taskDelete Unmarshal failed for " + taskID + ":" + err.Error())
+		espLogger(fie+":Unmarshal:"+taskID+":"+err.Error(), "error")
+		color.Red(fie + " Unmarshal failed for " + taskID + ":" + err.Error())
 		return
 	}
-	if xmlRespon.MethodResult != "ok" {
-		espLogger("taskDelete:MethodResult:"+taskID+":"+xmlRespon.State.ErrorRet, "error")
-		color.Red("taskDelete MethodResult failed for " + taskID + ":" + xmlRespon.State.ErrorRet)
+	if xmlRespon.MethodResult != "ok" && xmlRespon.State.ErrorRet != "The task specified is already completed and can not be cancelled" {
+		espLogger(fie+":MethodResult:"+taskID+":"+xmlRespon.State.ErrorRet, "error")
+		color.Red(fie + " MethodResult failed for " + taskID + ":" + xmlRespon.State.ErrorRet)
 		return
 	}
-	espLogger("Task "+taskID+" deleted", "notice")
+	espLogger("Task "+taskID+" "+ver, "notice")
 }
 
 //deleteWorkflow - Takes a Workflow ID, sends it to bpm::processDelete API for safe deletion
 func deleteWorkflow(workflowID string) {
+	var fie = "processDelete"
+	var ver = "deleted"
+	if cleanerConf.KeepRequestsCancelBPTasks {
+		fie = "processCancel"
+		ver = "cancelled"
+	}
 	espXmlmc.SetParam("identifier", workflowID)
-	browse, err := espXmlmc.Invoke("bpm", "processDelete")
+	browse, err := espXmlmc.Invoke("bpm", fie)
 	if err != nil {
-		espLogger("processDelete:Invoke:"+workflowID+":"+err.Error(), "error")
-		color.Red("processDelete Invoke failed for " + workflowID + ":" + err.Error())
+		espLogger(fie+":Invoke:"+workflowID+":"+err.Error(), "error")
+		color.Red(fie + " Invoke failed for " + workflowID + ":" + err.Error())
 		return
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
-		espLogger("processDelete:Unmarshal:"+workflowID+":"+err.Error(), "error")
-		color.Red("processDelete Unmarshal failed for " + workflowID + ":" + err.Error())
+		espLogger(fie+":Unmarshal:"+workflowID+":"+err.Error(), "error")
+		color.Red(fie + " Unmarshal failed for " + workflowID + ":" + err.Error())
 		return
 	}
 	if xmlRespon.MethodResult != "ok" {
-		espLogger("processDelete:MethodResult:"+workflowID+":"+xmlRespon.State.ErrorRet, "error")
-		color.Red("processDelete MethodResult failed for " + workflowID + ":" + xmlRespon.State.ErrorRet)
+		espLogger(fie+":MethodResult:"+workflowID+":"+xmlRespon.State.ErrorRet, "error")
+		color.Red(fie + " MethodResult failed for " + workflowID + ":" + xmlRespon.State.ErrorRet)
 		return
 	}
-	espLogger("Workflow "+workflowID+" deleted", "notice")
+	espLogger("Workflow "+workflowID+" "+ver, "notice")
 }
 
 //deleteCard - Takes a Card PK ID, sends it to data::entityDelete API for safe deletion

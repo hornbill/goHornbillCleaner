@@ -101,6 +101,7 @@ Example JSON File:
       - Example: -P1D2H3M4S - This will subtract 1 day (1D), 2 hours (2H), 3 minutes (3H) and 4 seconds (4S) from the current date & time.
       - See the CalculateTimeDuration function documentation in <https://github.com/hornbill/goHornbillHelpers> for more details
   - RequestReferences : An array of Request References to delete. If requests are defined in this array, then ONLY these requests will be deleted. The other parameters above will be ignored. In the example above, requests with reference CHR00000021 and INC00000003 would be deleted, and no other requests would be removed.
+  - KeepRequestsCancelBPTasks : a boolean (defaulting to false) which if set to true will NOT actually delete the selected requests, but will cancel the Business Process Workflow and any Tasks connected to the call.
 - CleanAssets : Set to true to remove all Assets (and related entity data) from a Hornbill instance
 - AssetClassID: Filter assets for deletetion by a single asset class ID (basic, computer, computerPeripheral, mobileDevice, printer, software, telecoms)
 - AssetTypeID: Filter assets for deletion by a single asset type ID - the primary key value of the asset type from the database. Can also be found in the URL when viewing an asset type, 18 in this example: https://live.hornbill.com/yourinstanceid/servicemanager/asset/type/view/18/ 

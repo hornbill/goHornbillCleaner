@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.15.0 (April 26th, 2021)
+
+Change:
+
+- Added ability to cancel request tasks and BP - see KeepRequestsCancelBPTasks.
+
 ## 1.14.0 (March 10th, 2021)
 
 Change:
