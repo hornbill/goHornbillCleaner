@@ -195,8 +195,12 @@ func deleteRecords(entity string, records []dataStruct) {
 			idsToDelete = append(idsToDelete, id)
 		}
 	}
-	entityDeleteRecords(appSM, entity, idsToDelete, false, false)
-	color.Green("Block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " deleted.")
+	if len(idsToDelete) > 0 {
+		entityDeleteRecords(appSM, entity, idsToDelete, false, false)
+	} else {
+		color.Yellow("Nothing to delete in this block.")
+	}
+		color.Green("Block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " deleted.")
 	currentBlock++
 }
 

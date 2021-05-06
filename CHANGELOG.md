@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.15.1 (May 6th, 2021)
+
+Fix:
+
+- Tweaked a little code in order to prevent a non-entity from being deleted.
+
 ## 1.15.0 (April 26th, 2021)
 
 Change:

@@ -3,6 +3,7 @@
 	"RequestServices":[],
 	"RequestStatuses":[],
 	"RequestTypes":[],
+	"KeepRequestsCancelBPTasks": false,
 	"RequestReferences":[
 	],
 	"RequestLogDateFrom":"",
