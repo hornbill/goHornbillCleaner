@@ -69,6 +69,22 @@ func getRecordCount(table string) int {
 			strQuery += ")"
 		}
 
+		if len(cleanerConf.RequestCatalogItems) > 0 {
+			if strQuery != "" {
+				strQuery += " AND"
+			}
+			strQuery += " h_catalog_id IN ("
+			firstElement := true
+			for _, reqCatalog := range cleanerConf.RequestCatalogItems {
+				if !firstElement {
+					strQuery += ","
+				}
+				strQuery += strconv.Itoa(reqCatalog)
+				firstElement = false
+			}
+			strQuery += ")"
+		}
+
 		if cleanerConf.RequestLogDateFrom != "" {
 			if strQuery != "" {
 				strQuery += " AND"
@@ -140,10 +156,11 @@ func getRecordCount(table string) int {
 	if strQuery != "" {
 		espXmlmc.SetParam("where", strQuery)
 	}
-
+	requestXML := espXmlmc.GetParam()
 	browse, err := espXmlmc.Invoke("data", "getRecordCount")
 	if err != nil {
 		espLogger("getRecordCount:Invoke:"+table+":"+strQuery+":"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
 		color.Red("getRecordCount Invoke failed for " + table + ":" + err.Error())
 		return 0
 	}
@@ -151,11 +168,15 @@ func getRecordCount(table string) int {
 	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("getRecordCount:Unmarshal:"+table+":"+strQuery+":"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
 		color.Red("getRecordCount Unmarshal failed for " + table + ":" + err.Error())
 		return 0
 	}
 	if xmlRespon.MethodResult != "ok" {
 		espLogger("getRecordCount:MethodResult:"+table+":"+strQuery+":"+xmlRespon.State.ErrorRet, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
 		color.Red("getRecordCount MethodResult failed for " + table + ":" + xmlRespon.State.ErrorRet)
 		return 0
 	}
@@ -193,9 +214,11 @@ func getAssetCount() int {
 		espXmlmc.SetParam("filters", string(filters))
 	}
 	espXmlmc.CloseElement("queryParams")
+	requestXML := espXmlmc.GetParam()
 	browse, err := espXmlmc.Invoke("data", "queryExec")
 	if err != nil {
 		espLogger("count:queryExec:Invoke:"+appSM+":Asset.getAssetsFiltered:count:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
 		color.Red("queryExec Invoke failed to get count for " + appSM + ":Asset.getAssetsFiltered:count:" + err.Error())
 		return 0
 	}
@@ -203,12 +226,61 @@ func getAssetCount() int {
 	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("queryExec:Unmarshal:"+appSM+":Asset.getAssetsFiltered:count:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
 		color.Red("queryExec Unmarshal failed to get count for " + appSM + ":Asset.getAssetsFiltered:count:" + err.Error())
 		return 0
 	}
 	if xmlRespon.MethodResult != "ok" {
 		espLogger("queryExec:MethodResult:"+appSM+":Asset.getAssetsFiltered:count:"+xmlRespon.State.ErrorRet, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
 		color.Red("queryExec MethodResult failed to get count for " + appSM + ":Asset.getAssetsFiltered:count:" + xmlRespon.State.ErrorRet)
+		return 0
+	}
+	return xmlRespon.Params.RecordIDs[0].Count
+}
+
+func getServiceAvailabilityHistoryCount() int {
+	//Use a stored query to get service availability record count
+	espXmlmc.SetParam("application", appSM)
+	espXmlmc.SetParam("queryName", "_listServiceStatusHistory")
+	espXmlmc.OpenElement("queryParams")
+	for _, v := range cleanerConf.ServiceAvailabilityServiceIDs {
+		espXmlmc.SetParam("serviceId", strconv.Itoa(v))
+	}
+	if !configDryRun || (configDryRun && currentBlock == 1) {
+		espXmlmc.SetParam("rowstart", "0")
+	} else {
+		espXmlmc.SetParam("rowstart", strconv.Itoa((configBlockSize*currentBlock)-1))
+	}
+	espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
+	espXmlmc.CloseElement("queryParams")
+	espXmlmc.OpenElement("queryOptions")
+	espXmlmc.SetParam("querytype", "count")
+	espXmlmc.CloseElement("queryOptions")
+	requestXML := espXmlmc.GetParam()
+	browse, err := espXmlmc.Invoke("data", "queryExec")
+	if err != nil {
+		espLogger("count:queryExec:Invoke:"+appSM+":_listServiceStatusHistory:count:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		color.Red("queryExec Invoke failed to get count for " + appSM + ":_listServiceStatusHistory:count:" + err.Error())
+		return 0
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
+	if err != nil {
+		espLogger("queryExec:Unmarshal:"+appSM+":_listServiceStatusHistory:count:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("queryExec Unmarshal failed to get count for " + appSM + ":_listServiceStatusHistory:count:" + err.Error())
+		return 0
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("queryExec:MethodResult:"+appSM+":_listServiceStatusHistory:count:"+xmlRespon.State.ErrorRet, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("queryExec MethodResult failed to get count for " + appSM + ":_listServiceStatusHistory:count:" + xmlRespon.State.ErrorRet)
 		return 0
 	}
 	return xmlRespon.Params.RecordIDs[0].Count
@@ -240,6 +312,9 @@ func getRecordIDs(entity string) []dataStruct {
 		}
 		for _, reqService := range cleanerConf.RequestServices {
 			espXmlmc.SetParam("service", strconv.Itoa(reqService))
+		}
+		for _, reqCatalog := range cleanerConf.RequestCatalogItems {
+			espXmlmc.SetParam("catalog", strconv.Itoa(reqCatalog))
 		}
 		if cleanerConf.RequestLogDateFrom != "" {
 			logDateFrom := cleanerConf.RequestLogDateFrom
@@ -284,7 +359,7 @@ func getRecordIDs(entity string) []dataStruct {
 		browse, err := espXmlmc.Invoke("data", "queryExec")
 		if err != nil {
 			espLogger("queryExec:Invoke:"+appSM+":_listRequestsOfType:"+err.Error(), "error")
-			espLogger(requestXML, "error")
+			espLogger("Request XML: "+requestXML, "debug")
 			color.Red("queryExec Invoke failed for " + appSM + ":_listRequestsOfType:" + err.Error())
 			return nil
 		}
@@ -292,14 +367,15 @@ func getRecordIDs(entity string) []dataStruct {
 		err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 		if err != nil {
 			espLogger("queryExec:Unmarshal:"+appSM+":_listRequestsOfType:"+err.Error(), "error")
-			espLogger(requestXML, "error")
-			espLogger(browse, "error")
+			espLogger("Request XML: "+requestXML, "debug")
+			espLogger("Response XML: "+browse, "debug")
 			color.Red("queryExec Unmarshal failed for " + appSM + ":_listRequestsOfType:" + err.Error())
 			return nil
 		}
 		if xmlRespon.MethodResult != "ok" {
 			espLogger("queryExec:MethodResult:"+appSM+":_listRequestsOfType:"+xmlRespon.State.ErrorRet, "error")
-			espLogger(requestXML, "error")
+			espLogger("Request XML: "+requestXML, "debug")
+			espLogger("Response XML: "+browse, "debug")
 			color.Red("queryExec MethodResult failed for " + appSM + ":_listRequestsOfType:" + xmlRespon.State.ErrorRet)
 			return nil
 		}
@@ -348,7 +424,7 @@ func getRecordIDs(entity string) []dataStruct {
 		browse, err := espXmlmc.Invoke("data", "queryExec")
 		if err != nil {
 			espLogger("queryExec:Invoke:"+appSM+":Asset.getAssetsFiltered:"+err.Error(), "error")
-			espLogger(requestXML, "error")
+			espLogger("Request XML: "+requestXML, "debug")
 			color.Red("queryExec Invoke failed for " + appSM + ":Asset.getAssetsFiltered:" + err.Error())
 			return nil
 		}
@@ -357,15 +433,62 @@ func getRecordIDs(entity string) []dataStruct {
 		err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 		if err != nil {
 			espLogger("queryExec:Unmarshal:"+appSM+":Asset.getAssetsFiltered:"+err.Error(), "error")
-			espLogger(requestXML, "error")
-			espLogger(browse, "error")
+			espLogger("Request XML: "+requestXML, "debug")
+			espLogger("Response XML: "+browse, "debug")
 			color.Red("queryExec Unmarshal failed for " + appSM + ":Asset.getAssetsFiltered:" + err.Error())
 			return nil
 		}
 		if xmlRespon.MethodResult != "ok" {
 			espLogger("queryExec:MethodResult:"+appSM+":Asset.getAssetsFiltered:"+xmlRespon.State.ErrorRet, "error")
-			espLogger(requestXML, "error")
+			espLogger("Request XML: "+requestXML, "debug")
+			espLogger("Response XML: "+browse, "debug")
 			color.Red("queryExec MethodResult failed for " + appSM + ":Asset.getAssetsFiltered:" + xmlRespon.State.ErrorRet)
+			return nil
+		}
+		return xmlRespon.Params.RecordIDs
+	}
+
+	if entity == "ServiceStatusHistory" {
+		//Use a stored query to get asset IDs
+		espXmlmc.SetParam("application", appSM)
+		espXmlmc.SetParam("queryName", "_listServiceStatusHistory")
+		espXmlmc.OpenElement("queryParams")
+		for _, v := range cleanerConf.ServiceAvailabilityServiceIDs {
+			espXmlmc.SetParam("serviceId", strconv.Itoa(v))
+		}
+		if !configDryRun || (configDryRun && currentBlock == 1) {
+			espXmlmc.SetParam("rowstart", "0")
+		} else {
+			espXmlmc.SetParam("rowstart", strconv.Itoa((configBlockSize*currentBlock)-1))
+		}
+		espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
+		espXmlmc.CloseElement("queryParams")
+		espXmlmc.OpenElement("queryOptions")
+		espXmlmc.SetParam("querytype", "records")
+		espXmlmc.CloseElement("queryOptions")
+		requestXML := espXmlmc.GetParam()
+		browse, err := espXmlmc.Invoke("data", "queryExec")
+		if err != nil {
+			espLogger("queryExec:Invoke:"+appSM+":_listServiceStatusHistory:"+err.Error(), "error")
+			espLogger("Request XML: "+requestXML, "debug")
+			color.Red("queryExec Invoke failed for " + appSM + ":_listServiceStatusHistory:" + err.Error())
+			return nil
+		}
+		var xmlRespon xmlmcResponse
+
+		err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
+		if err != nil {
+			espLogger("queryExec:Unmarshal:"+appSM+":_listServiceStatusHistory:"+err.Error(), "error")
+			espLogger("Request XML: "+requestXML, "debug")
+			espLogger("Response XML: "+browse, "debug")
+			color.Red("queryExec Unmarshal failed for " + appSM + ":_listServiceStatusHistory:" + err.Error())
+			return nil
+		}
+		if xmlRespon.MethodResult != "ok" {
+			espLogger("queryExec:MethodResult:"+appSM+":_listServiceStatusHistory:"+xmlRespon.State.ErrorRet, "error")
+			espLogger("Request XML: "+requestXML, "debug")
+			espLogger("Response XML: "+browse, "debug")
+			color.Red("queryExec MethodResult failed for " + appSM + ":_listServiceStatusHistory:" + xmlRespon.State.ErrorRet)
 			return nil
 		}
 		return xmlRespon.Params.RecordIDs
@@ -386,7 +509,7 @@ func getRecordIDs(entity string) []dataStruct {
 	browse, err := espXmlmc.Invoke("data", "queryExec")
 	if err != nil {
 		espLogger("Call to queryExec ["+entity+"] failed when returning block "+strconv.Itoa(currentBlock), "error")
-		espLogger(requestXML, "error")
+		espLogger("Request XML: "+requestXML, "debug")
 		color.Red("Call to queryExec [" + entity + "] failed when returning block " + strconv.Itoa(currentBlock))
 		return nil
 	}
@@ -394,14 +517,15 @@ func getRecordIDs(entity string) []dataStruct {
 	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("Unmarshal of queryExec ["+entity+"] data failed when returning block "+strconv.Itoa(currentBlock), "error")
-		espLogger(requestXML, "error")
-		espLogger(browse, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
 		color.Red("Unmarshal of queryExec [" + entity + "] data failed when returning block " + strconv.Itoa(currentBlock))
 		return nil
 	}
 	if xmlRespon.MethodResult != "ok" {
 		espLogger("AssetLinks queryExec was unsuccessful: "+xmlRespon.State.ErrorRet, "error")
-		espLogger(requestXML, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
 		color.Red("AssetLinks queryExec was unsuccessful: " + xmlRespon.State.ErrorRet)
 		return nil
 	}
@@ -413,9 +537,11 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 	//First get request task counters so we can set correct state
 	espXmlmc.SetParam("objectRefUrn", "urn:sys:entity:"+appSM+":Requests:"+callRef)
 	espXmlmc.SetParam("counters", "true")
+	requestXML := espXmlmc.GetParam()
 	getCounters, err := espXmlmc.Invoke("apps/com.hornbill.core/Task", "getEntityTasks")
 	if err != nil {
 		espLogger("getEntityTasks:Invoke:Request:"+callRef+":"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
 		color.Red("getEntityTasks Invoke failed for Request:" + callRef + ":" + err.Error())
 		return nil
 	}
@@ -423,11 +549,15 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(getCounters))), &xmlResponCount)
 	if err != nil {
 		espLogger("getEntityTasks:Unmarshal:Request:"+callRef+":"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+getCounters, "debug")
 		color.Red("getEntityTasks Unmarshal failed for Request:" + callRef + ":" + err.Error())
 		return nil
 	}
 	if xmlResponCount.MethodResult != "ok" {
 		espLogger("getEntityTasks:MethodResult:Request:"+callRef+":"+xmlResponCount.State.ErrorRet, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+getCounters, "debug")
 		color.Red("getEntityTasks MethodResult failed for Request:" + callRef + ":" + xmlResponCount.State.ErrorRet)
 		return nil
 	}
@@ -442,10 +572,11 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 		for k := range objCounter {
 			espXmlmc.SetParam("taskStatus", k)
 		}
-
+		requestXML := espXmlmc.GetParam()
 		browse, errTask := espXmlmc.Invoke("apps/com.hornbill.core/Task", "getEntityTasks")
 		if errTask != nil {
 			espLogger("getEntityTasks:taskStatus:Invoke:Request:"+callRef+":"+errTask.Error(), "error")
+			espLogger("Request XML: "+requestXML, "debug")
 			color.Red("getEntityTasks Invoke failed for Request:" + callRef + ":" + errTask.Error())
 			return nil
 		}
@@ -453,11 +584,15 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 		errTask = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 		if errTask != nil {
 			espLogger("getEntityTasks:taskStatus:Unmarshal:Request:"+callRef+":"+errTask.Error(), "error")
+			espLogger("Request XML: "+requestXML, "debug")
+			espLogger("Response XML: "+browse, "debug")
 			color.Red("getEntityTasks Unmarshal failed for Request:" + callRef + ":" + errTask.Error())
 			return nil
 		}
 		if xmlRespon.MethodResult != "ok" {
 			espLogger("getEntityTasks:taskStatus:MethodResult:Request:"+callRef+":"+xmlRespon.State.ErrorRet, "error")
+			espLogger("Request XML: "+requestXML, "debug")
+			espLogger("Response XML: "+browse, "debug")
 			color.Red("getEntityTasks MethodResult failed for Request:" + callRef + ":" + xmlRespon.State.ErrorRet)
 			return nil
 		}
@@ -475,9 +610,11 @@ func getRequestWorkflow(callRef string) string {
 	espXmlmc.SetParam("application", appSM)
 	espXmlmc.SetParam("entity", "Requests")
 	espXmlmc.SetParam("keyValue", callRef)
+	requestXML := espXmlmc.GetParam()
 	browse, err := espXmlmc.Invoke("data", "entityGetRecord")
 	if err != nil {
 		espLogger("entityGetRecord:Invoke:Requests:"+callRef+":"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
 		color.Red("entityGetRecord Invoke failed for Requests:" + callRef + ":" + err.Error())
 		return ""
 	}
@@ -485,11 +622,15 @@ func getRequestWorkflow(callRef string) string {
 	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("entityGetRecord:Unmarshal:Requests:"+callRef+":"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
 		color.Red("entityGetRecord Unmarshal failed for Requests:" + callRef + ":" + err.Error())
 		return ""
 	}
 	if xmlRespon.MethodResult != "ok" {
 		espLogger("entityGetRecord:Unmarshal:Requests:"+callRef+":"+xmlRespon.State.ErrorRet, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
 		color.Red("entityGetRecord Unmarshal failed for Requests:" + callRef + ":" + xmlRespon.State.ErrorRet)
 		return ""
 	}
@@ -511,11 +652,13 @@ func getAppList() ([]appsStruct, bool) {
 	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(apps))), &xmlRespon)
 	if err != nil {
 		espLogger("getApplicationList:Unmarshal:"+err.Error(), "error")
+		espLogger("Response XML: "+apps, "debug")
 		color.Red("getApplicationList Unmarshal failed:" + err.Error())
 		return returnArray, returnBool
 	}
 	if xmlRespon.MethodResult != "ok" {
 		espLogger("getApplicationList:MethodResult:"+xmlRespon.State.ErrorRet, "error")
+		espLogger("Response XML: "+apps, "debug")
 		color.Red("getApplicationList MethodResult failed:" + xmlRespon.State.ErrorRet)
 		return returnArray, returnBool
 	}
@@ -538,9 +681,11 @@ func entityBrowseRecords(application, entity, matchScope string, searchFilters [
 		logSearchFilter = append(logSearchFilter, v.Column+" = '"+v.Value+"' ("+v.MatchType+")")
 	}
 	logFilter := strings.Join(logSearchFilter[:], " AND ")
+	requestXML := espXmlmc.GetParam()
 	browse, err := espXmlmc.Invoke("data", "entityBrowseRecords2")
 	if err != nil {
 		espLogger("entityBrowseRecords2:Invoke:"+application+":"+entity+":"+logFilter+":"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
 		color.Red("entityBrowseRecords2 Invoke failed for " + application + ":" + entity + ":" + err.Error())
 		return nil
 	}
@@ -548,11 +693,15 @@ func entityBrowseRecords(application, entity, matchScope string, searchFilters [
 	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("entityBrowseRecords2:Unmarshal:"+application+":"+entity+":"+logFilter+":"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
 		color.Red("entityBrowseRecords2 Unmarshal failed for " + application + ":" + entity + ":" + err.Error())
 		return nil
 	}
 	if xmlRespon.MethodResult != "ok" {
 		espLogger("entityBrowseRecords2:MethodResult:"+application+":"+entity+":"+logFilter+":"+xmlRespon.State.ErrorRet, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
 		color.Red("entityBrowseRecords2 MethodResult failed for " + application + ":" + entity + ":" + xmlRespon.State.ErrorRet)
 		return nil
 	}
@@ -574,9 +723,11 @@ func queryExec(application, queryName string, queryParams []queryParamsStruct) [
 	logKeyVals := strings.Join(queryKeyVal[:], "|")
 
 	espXmlmc.CloseElement("queryParams")
+	requestXML := espXmlmc.GetParam()
 	browse, err := espXmlmc.Invoke("data", "queryExec")
 	if err != nil {
 		espLogger("queryExec:Invoke:"+application+":"+queryName+":"+logKeyVals+":"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
 		color.Red("queryExec Invoke failed for " + application + ":" + queryName + ":" + err.Error())
 		return nil
 	}
@@ -584,11 +735,15 @@ func queryExec(application, queryName string, queryParams []queryParamsStruct) [
 	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
 		espLogger("queryExec:Unmarshal:"+application+":"+queryName+":"+logKeyVals+":"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
 		color.Red("queryExec Unmarshal failed for " + application + ":" + queryName + ":" + err.Error())
 		return nil
 	}
 	if xmlRespon.MethodResult != "ok" {
 		espLogger("queryExec:MethodResult:"+application+":"+queryName+":"+logKeyVals+":"+xmlRespon.State.ErrorRet, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
 		color.Red("queryExec MethodResult failed for " + application + ":" + queryName + ":" + xmlRespon.State.ErrorRet)
 		return nil
 	}

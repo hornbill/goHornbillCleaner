@@ -7,30 +7,29 @@ import (
 )
 
 const (
-	version               = "1.15.1"
-	appSM                 = "com.hornbill.servicemanager"
-	appBM                 = "com.hornbill.boardmanager"
-	appCM                 = "com.hornbill.configurationmanager"
-	datetimeFormat        = "2006-01-02 15:04:05"
-	minBoardManagerBuild  = 100
-	minConfigManagerBuild = 10
+	version              = "1.16.0"
+	appName              = "goHornbillCleaner"
+	appSM                = "com.hornbill.servicemanager"
+	appBM                = "com.hornbill.boardmanager"
+	appCore              = "com.hornbill.core"
+	datetimeFormat       = "2006-01-02 15:04:05"
+	minBoardManagerBuild = 100
 )
 
 var (
-	boardManagerInstalled  = false
-	configManagerInstalled = false
-	cleanerConf            cleanerConfStruct
-	configFileName         string
-	configAPIKey           string
-	configInstance         string
-	configBlockSize        int
-	configDryRun           bool
-	configSkipPrompts      bool
-	configVersion          bool
-	durationRegex          = regexp.MustCompile(`P[0-9]*D[0-9]*H[0-9]*M[0-9]*S`)
-	currentBlock           int
-	totalBlocks            int
-	espXmlmc               *apiLib.XmlmcInstStruct
+	boardManagerInstalled = false
+	cleanerConf           cleanerConfStruct
+	configFileName        string
+	configAPIKey          string
+	configInstance        string
+	configBlockSize       int
+	configDryRun          bool
+	configSkipPrompts     bool
+	configVersion         bool
+	currentBlock          int
+	totalBlocks           int
+	durationRegex         = regexp.MustCompile(`P[0-9]*D[0-9]*H[0-9]*M[0-9]*S`)
+	espXmlmc              *apiLib.XmlmcInstStruct
 )
 
 type xmlmcResponse struct {
@@ -72,9 +71,11 @@ type dataStruct struct {
 	AssetDependencyID string `xml:"h_pk_confitemdependencyid"`
 	BPMEventID        string `xml:"h_fk_eventid"`
 	BPMTimerID        string `xml:"h_fk_timerid"`
-	CardID            string `xml:"h_id"`
+	HID               string `xml:"h_id"`
 	TimerID           string `xml:"h_pk_tid"`
 	Count             int    `xml:"count"`
+	ContactID         int
+	OrgID             int
 }
 
 type taskStruct struct {
@@ -89,23 +90,29 @@ type appsStruct struct {
 }
 
 type cleanerConfStruct struct {
-	CleanRequests             bool
-	KeepRequestsCancelBPTasks bool
-	RequestServices           []int
-	RequestCatalogItems       []int
-	RequestStatuses           []string
-	RequestTypes              []string
-	RequestLogDateFrom        string
-	RequestLogDateTo          string
-	RequestClosedDateFrom     string
-	RequestClosedDateTo       string
-	RequestReferences         []string
-	CleanAssets               bool
-	AssetClassID              string
-	AssetTypeID               int
-	AssetFilters              []assetFilterStuct
-	CleanUsers                bool
-	Users                     []string
+	CleanRequests                   bool
+	KeepRequestsCancelBPTasks       bool
+	RequestServices                 []int
+	RequestCatalogItems             []int
+	RequestStatuses                 []string
+	RequestTypes                    []string
+	RequestLogDateFrom              string
+	RequestLogDateTo                string
+	RequestClosedDateFrom           string
+	RequestClosedDateTo             string
+	RequestReferences               []string
+	CleanAssets                     bool
+	AssetClassID                    string
+	AssetTypeID                     int
+	AssetFilters                    []assetFilterStuct
+	CleanUsers                      bool
+	Users                           []string
+	CleanServiceAvailabilityHistory bool
+	ServiceAvailabilityServiceIDs   []int
+	CleanContacts                   bool
+	ContactIDs                      []int
+	CleanOrganisations              bool
+	OrganisationIDs                 []int
 }
 
 type queryParamsStruct struct {

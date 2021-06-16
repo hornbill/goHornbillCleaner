@@ -1,11 +1,11 @@
 {
 	"CleanRequests": false,
 	"RequestServices":[],
+	"RequestCatalogItems":[],
 	"RequestStatuses":[],
 	"RequestTypes":[],
 	"KeepRequestsCancelBPTasks": false,
-	"RequestReferences":[
-	],
+	"RequestReferences":[],
 	"RequestLogDateFrom":"",
 	"RequestLogDateTo":"",
 	"RequestClosedDateFrom":"",
@@ -15,5 +15,11 @@
 	"AssetTypeID": 0,
 	"AssetFilters": [],
 	"CleanUsers":false,
-	"Users":[]
+	"Users":[],
+	"CleanServiceAvailabilityHistory": false,
+	"ServiceAvailabilityServiceIDs": [],
+	"CleanContacts": false,
+	"ContactIDs": [],
+	"CleanOrganisations": false,
+	"OrganisationIDs": []
 }

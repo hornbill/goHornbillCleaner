@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 1.16.0 (June 17th 2021)
+
+Changes:
+
+- Updates to cater for move of Configuration Manager into Service Manager
+
+Features:
+
+- Added support to filter Requests for deletion by Catalog ID
+- Added support to delete Service Availability records, filtered by Service ID(s)
+- Added support to delete Contact records
+- Added support to delete Organization records
+- Added version check against Github repo 
+- Enhanced debug logging, now logs request and response payloads when an API call into Hornbill fails
+
 ## 1.15.1 (May 6th, 2021)
 
 Fix:

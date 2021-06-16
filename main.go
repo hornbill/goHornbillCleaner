@@ -13,6 +13,7 @@ import (
 	"github.com/fatih/color"
 	apiLib "github.com/hornbill/goApiLib"
 	hornbillHelpers "github.com/hornbill/goHornbillHelpers"
+	"github.com/tcnksm/go-latest"
 )
 
 var (
@@ -43,6 +44,8 @@ func main() {
 	espLogger("********** Cleaner Utility Started **********", "notice")
 	defer espLogger("********** Cleaner Utility Completed **********", "notice")
 
+	checkVersion()
+
 	var err error
 	//Load the configuration file
 	cleanerConf, err = loadConfig()
@@ -55,9 +58,14 @@ func main() {
 	//Ask if we want to delete before continuing
 	fmt.Println("")
 	fmt.Println("===== Hornbill Cleaner Utility v" + version + " =====")
-	if !cleanerConf.CleanRequests && !cleanerConf.CleanAssets && !cleanerConf.CleanUsers {
+	if !cleanerConf.CleanRequests && !cleanerConf.CleanAssets && !cleanerConf.CleanUsers && !cleanerConf.CleanServiceAvailabilityHistory && !cleanerConf.CleanContacts && !cleanerConf.CleanOrganisations {
 		color.Red("No entity data has been specified for cleansing in " + configFileName)
 		espLogger("No entity data has been specified for cleansing in "+configFileName, "error")
+		return
+	}
+	if cleanerConf.CleanServiceAvailabilityHistory && len(cleanerConf.ServiceAvailabilityServiceIDs) == 0 {
+		color.Red("CleanServiceAvailabilityHistory is set to true but no ServiceAvailabilityServiceIDs have been specified for cleaning in " + configFileName)
+		espLogger("CleanServiceAvailabilityHistory is set to true but no ServiceAvailabilityServiceIDs have been specified for cleaning in "+configFileName, "error")
 		return
 	}
 	fmt.Println("")
@@ -83,6 +91,15 @@ func main() {
 	if cleanerConf.CleanUsers {
 		color.Magenta(" * Specified Users (and related data)")
 	}
+	if cleanerConf.CleanServiceAvailabilityHistory && len(cleanerConf.ServiceAvailabilityServiceIDs) > 0 {
+		color.Magenta(" * Service Availability History for the configuration defined service IDs")
+	}
+	if cleanerConf.CleanContacts && len(cleanerConf.ContactIDs) > 0 {
+		color.Magenta(" * Specified Contacts")
+	}
+	if cleanerConf.CleanOrganisations && len(cleanerConf.OrganisationIDs) > 0 {
+		color.Magenta(" * Specified Organisations")
+	}
 	fmt.Println("")
 
 	if !configSkipPrompts {
@@ -105,6 +122,9 @@ func main() {
 	logConfig()
 	processRequests()
 	processAssets()
+	processServiceAvailabilityHistory()
+	processContacts()
+	processOrgs()
 
 	if cleanerConf.CleanUsers {
 		espLogger("[USERS] Attempting to delete "+strconv.Itoa(len(cleanerConf.Users))+" Users", "info")
@@ -178,6 +198,9 @@ func logConfig() {
 
 	espLogger("CleanAssets: "+fmt.Sprintf("%t", cleanerConf.CleanAssets), "info")
 	espLogger("CleanUsers: "+fmt.Sprintf("%t", cleanerConf.CleanUsers), "info")
+	espLogger("CleanServiceAvailabilityHistory: "+fmt.Sprintf("%t", cleanerConf.CleanServiceAvailabilityHistory), "info")
+	espLogger("CleanContacts: "+fmt.Sprintf("%t", cleanerConf.CleanContacts), "info")
+	espLogger("CleanOrganisations: "+fmt.Sprintf("%t", cleanerConf.CleanOrganisations), "info")
 	if cleanerConf.CleanUsers {
 		for _, v := range cleanerConf.Users {
 			espLogger("User ID: "+v, "info")
@@ -195,6 +218,46 @@ func isAppInstalled(appName string, buildVer int) bool {
 		}
 	}
 	return false
+}
+
+func processContacts() {
+	//Process Contact Records
+	if cleanerConf.CleanContacts {
+		contactCount := 0
+		if len(cleanerConf.ContactIDs) > 0 {
+			currentBlock = 1
+			contactCount = len(cleanerConf.ContactIDs)
+			espLogger("Block Size: "+strconv.Itoa(configBlockSize), "debug")
+			contactBlocks := float64(contactCount) / float64(configBlockSize)
+			totalBlocks = int(math.Ceil(contactBlocks))
+			espLogger("Number of Contacts to delete: "+strconv.Itoa(contactCount), "debug")
+			color.Green("Number of Contacts to delete: " + strconv.Itoa(contactCount))
+			processEntityClean("Contact", configBlockSize)
+		} else {
+			espLogger("There are no contacts to delete.", "debug")
+			color.Red("There are no contacts to delete.")
+		}
+	}
+}
+
+func processOrgs() {
+	//Process Org Records
+	if cleanerConf.CleanOrganisations {
+		orgCount := 0
+		if len(cleanerConf.OrganisationIDs) > 0 {
+			currentBlock = 1
+			orgCount = len(cleanerConf.OrganisationIDs)
+			espLogger("Block Size: "+strconv.Itoa(configBlockSize), "debug")
+			orgBlocks := float64(orgCount) / float64(configBlockSize)
+			totalBlocks = int(math.Ceil(orgBlocks))
+			espLogger("Number of Organisations to delete: "+strconv.Itoa(orgCount), "debug")
+			color.Green("Number of Organisations to delete: " + strconv.Itoa(orgCount))
+			processEntityClean("Organizations", configBlockSize)
+		} else {
+			espLogger("There are no organisations to delete.", "debug")
+			color.Red("There are no organisations to delete.")
+		}
+	}
 }
 
 func processRequests() {
@@ -238,7 +301,6 @@ func processRequests() {
 func processAssets() {
 	//Process Asset Records
 	if cleanerConf.CleanAssets {
-		configManagerInstalled = isAppInstalled(appCM, minConfigManagerBuild)
 		assetCount := getAssetCount()
 		if assetCount > 0 {
 			currentBlock = 1
@@ -266,6 +328,23 @@ func processAssets() {
 	}
 }
 
+func processServiceAvailabilityHistory() {
+	//Process Service Availability Records
+	if cleanerConf.CleanServiceAvailabilityHistory {
+		sahCount := getServiceAvailabilityHistoryCount()
+		if sahCount > 0 {
+			currentBlock = 1
+			sahBlocks := float64(sahCount) / float64(configBlockSize)
+			totalBlocks = int(math.Ceil(sahBlocks))
+			espLogger("Number of ServiceStatusHistory records to delete: "+strconv.Itoa(sahCount), "debug")
+			processEntityClean("ServiceStatusHistory", configBlockSize)
+		} else {
+			espLogger("There are no ServiceStatusHistory records to delete.", "debug")
+			color.Red("There are no ServiceStatusHistory records to delete.")
+		}
+	}
+}
+
 func parseFlags() {
 	flag.StringVar(&configFileName, "file", "conf.json", "Name of Configuration File To Load")
 	flag.IntVar(&configBlockSize, "BlockSize", 3, "Number of records to delete per block")
@@ -279,7 +358,7 @@ func parseFlags() {
 
 //processEntityClean - iterates through and processes record blocks of size defined in flag configBlockSize
 func processEntityClean(entity string, chunkSize int) {
-	if len(cleanerConf.RequestReferences) > 0 && entity == "Requests" {
+	if entity == "Requests" && len(cleanerConf.RequestReferences) > 0 {
 
 		//Split request slice in to chunks
 		var divided [][]string
@@ -289,12 +368,45 @@ func processEntityClean(entity string, chunkSize int) {
 		}
 		//range through slice, delete request chunks
 		for _, block := range divided {
-			//fmt.Println(block)
 			var requestDataToStruct []dataStruct
 			for _, v := range block {
 				requestDataToStruct = append(requestDataToStruct, dataStruct{RequestID: v})
 			}
 			deleteRecords(entity, requestDataToStruct)
+		}
+
+	} else if entity == "Contact" && len(cleanerConf.ContactIDs) > 0 {
+
+		//Split request slice in to chunks
+		var divided [][]int
+		for i := 0; i < len(cleanerConf.ContactIDs); i += chunkSize {
+			batch := cleanerConf.ContactIDs[i:getLowerInt(i+chunkSize, len(cleanerConf.ContactIDs))]
+			divided = append(divided, batch)
+		}
+		//range through slice, delete request chunks
+		for _, block := range divided {
+			var contactDataToStruct []dataStruct
+			for _, v := range block {
+				contactDataToStruct = append(contactDataToStruct, dataStruct{ContactID: v})
+			}
+			deleteRecords(entity, contactDataToStruct)
+		}
+
+	} else if entity == "Organizations" && len(cleanerConf.OrganisationIDs) > 0 {
+
+		//Split request slice in to chunks
+		var divided [][]int
+		for i := 0; i < len(cleanerConf.OrganisationIDs); i += chunkSize {
+			batch := cleanerConf.OrganisationIDs[i:getLowerInt(i+chunkSize, len(cleanerConf.OrganisationIDs))]
+			divided = append(divided, batch)
+		}
+		//range through slice, delete request chunks
+		for _, block := range divided {
+			var orgDataToStruct []dataStruct
+			for _, v := range block {
+				orgDataToStruct = append(orgDataToStruct, dataStruct{OrgID: v})
+			}
+			deleteRecords(entity, orgDataToStruct)
 		}
 
 	} else {
@@ -378,4 +490,25 @@ func logger(s string) {
 	log.SetOutput(f)
 	//Write the log entry
 	log.Println(s)
+}
+
+//-- Check Latest
+func checkVersion() {
+	githubTag := &latest.GithubTag{
+		Owner:      "hornbill",
+		Repository: appName,
+	}
+
+	res, err := latest.Check(githubTag, version)
+	if err != nil {
+		msg := "Unable to check utility version against Github repository: " + err.Error()
+		color.Red(msg)
+		espLogger(msg, "error")
+		return
+	}
+	if res.Outdated {
+		msg := "v" + version + " is not latest, you should upgrade to " + res.Current + " by downloading the latest package from: https://github.com/hornbill/" + appName + "/releases/tag/v" + res.Current
+		color.Yellow(msg)
+		espLogger(msg, "warn")
+	}
 }
