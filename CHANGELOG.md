@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.16.1 (June 30th, 2021)
+
+Fix:
+
+- Issue returning count of Service Status History records
+
 ## 1.16.0 (June 17th 2021)
 
 Changes:

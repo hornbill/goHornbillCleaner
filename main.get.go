@@ -249,12 +249,6 @@ func getServiceAvailabilityHistoryCount() int {
 	for _, v := range cleanerConf.ServiceAvailabilityServiceIDs {
 		espXmlmc.SetParam("serviceId", strconv.Itoa(v))
 	}
-	if !configDryRun || (configDryRun && currentBlock == 1) {
-		espXmlmc.SetParam("rowstart", "0")
-	} else {
-		espXmlmc.SetParam("rowstart", strconv.Itoa((configBlockSize*currentBlock)-1))
-	}
-	espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
 	espXmlmc.CloseElement("queryParams")
 	espXmlmc.OpenElement("queryOptions")
 	espXmlmc.SetParam("querytype", "count")
