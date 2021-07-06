@@ -10,8 +10,8 @@ github.com/hashicorp/go-version v1.3.0 h1:McDWVJIU/y+u1BRV06dPaLfLCaT7fUTJLp5r04
 github.com/hashicorp/go-version v1.3.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/hornbill/color v0.0.0-20160224221155-4f7bcef27eec h1:AUmaJ3y02otM3vjxEJTRZnQq1pnXKIxeIRt7kfeGB5Y=
 github.com/hornbill/color v0.0.0-20160224221155-4f7bcef27eec/go.mod h1:gUJp2IQ2Vl5ct+4uOBj5uvqRHB9erft9Nbchrdr/vVc=
-github.com/hornbill/goApiLib v0.0.0-20210209150605-33738d4bdd48 h1:xIivnX9Jk02w+ivbklKAQnIVswhUNr17ReUf+hf5QLQ=
-github.com/hornbill/goApiLib v0.0.0-20210209150605-33738d4bdd48/go.mod h1:zkR9RzTonmWt1vYmKGuF9I+5bOFxVONc4xbR6mJFDVI=
+github.com/hornbill/goApiLib v0.0.0-20210702135347-bcef2b442dbc h1:8MaZBmb1wbfaYP+S6Hm6vDLxnlnfJcsRN8t5RdA+W6I=
+github.com/hornbill/goApiLib v0.0.0-20210702135347-bcef2b442dbc/go.mod h1:CbxTQVBE4NWPfLP2+d9TWZk7luhH6ZyDK1UHlvzvxPs=
 github.com/hornbill/goHornbillHelpers v0.0.0-20190110171921-6d8d037ec1e8 h1:fjgIfY8P/v8ZvSC4VctbwGZx7JkTL13OoxHG/wgcbTE=
 github.com/hornbill/goHornbillHelpers v0.0.0-20190110171921-6d8d037ec1e8/go.mod h1:EXurYUZwP4QD99G56n+3QA/gXA4rKI+d8G1oH1WksGg=
 github.com/mattn/go-colorable v0.1.8 h1:c1ghPdyEDarC70ftn0y+A/Ee++9zz8ljHG1b13eJ0s8=

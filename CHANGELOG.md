@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 1.16.2 (July 6th, 2021)
+
+Change:
+
+- Rebuilt using latest version of goApiLib, to fix possible issue witt connections via a proxy
+
+
 ## 1.16.1 (June 30th, 2021)
 
 Fix:
