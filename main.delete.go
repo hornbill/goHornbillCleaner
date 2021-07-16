@@ -33,6 +33,9 @@ func deleteRecords(entity string, records []dataStruct) {
 			} else if entity == "ServiceStatusHistory" {
 				id = v.HID
 				description = "Service Status History ID: " + id
+			} else if entity == "Suppliers" {
+				id = strconv.Itoa(v.SuppID)
+				description = "Supplier ID: " + id
 			}
 			espLogger("["+strings.ToUpper(entity)+"] ID:"+id+" "+description, "info")
 		}
@@ -204,6 +207,10 @@ func deleteRecords(entity string, records []dataStruct) {
 			id = strconv.Itoa(v.ContactID)
 		} else if entity == "Organizations" {
 			id = strconv.Itoa(v.OrgID)
+		} else if entity == "Suppliers" {
+			id = strconv.Itoa(v.SuppID)
+		} else if entity == "SupplierContracts" {
+			id = v.SuppConID
 		}
 		if id != "" {
 			idsToDelete = append(idsToDelete, id)
@@ -212,6 +219,8 @@ func deleteRecords(entity string, records []dataStruct) {
 	if len(idsToDelete) > 0 {
 		if entity == "Contact" || entity == "Organizations" {
 			entityDeleteRecords(appCore, entity, idsToDelete, false, false)
+		} else if entity == "Suppliers" || entity == "SupplierContracts" {
+			entityDeleteRecords(appSuppM, entity, idsToDelete, false, false)
 		} else {
 			entityDeleteRecords(appSM, entity, idsToDelete, false, false)
 		}

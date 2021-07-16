@@ -1,11 +1,17 @@
 # CHANGELOG
 
+## 1.17.0 (July 16th, 2021)
+
+Features:
+
+- Added support to delete Supplier records from Supplier Manager 
+- Added support to delete Supplier Contract records from Supplier Manager 
+
 ## 1.16.2 (July 6th, 2021)
 
 Change:
 
 - Rebuilt using latest version of goApiLib, to fix possible issue witt connections via a proxy
-
 
 ## 1.16.1 (June 30th, 2021)
 

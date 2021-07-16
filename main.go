@@ -58,7 +58,7 @@ func main() {
 	//Ask if we want to delete before continuing
 	fmt.Println("")
 	fmt.Println("===== Hornbill Cleaner Utility v" + version + " =====")
-	if !cleanerConf.CleanRequests && !cleanerConf.CleanAssets && !cleanerConf.CleanUsers && !cleanerConf.CleanServiceAvailabilityHistory && !cleanerConf.CleanContacts && !cleanerConf.CleanOrganisations {
+	if !cleanerConf.CleanRequests && !cleanerConf.CleanAssets && !cleanerConf.CleanUsers && !cleanerConf.CleanServiceAvailabilityHistory && !cleanerConf.CleanContacts && !cleanerConf.CleanOrganisations && !cleanerConf.CleanSuppliers && !cleanerConf.CleanSupplierContracts {
 		color.Red("No entity data has been specified for cleansing in " + configFileName)
 		espLogger("No entity data has been specified for cleansing in "+configFileName, "error")
 		return
@@ -100,6 +100,12 @@ func main() {
 	if cleanerConf.CleanOrganisations && len(cleanerConf.OrganisationIDs) > 0 {
 		color.Magenta(" * Specified Organisations")
 	}
+	if cleanerConf.CleanSuppliers && len(cleanerConf.SupplierIDs) > 0 {
+		color.Magenta(" * Specified Suppliers")
+	}
+	if cleanerConf.CleanSupplierContracts && len(cleanerConf.SupplierContractIDs) > 0 {
+		color.Magenta(" * Specified Supplier Contracts")
+	}
 	fmt.Println("")
 
 	if !configSkipPrompts {
@@ -125,6 +131,8 @@ func main() {
 	processServiceAvailabilityHistory()
 	processContacts()
 	processOrgs()
+	processSuppliers()
+	processSupplierContracts()
 
 	if cleanerConf.CleanUsers {
 		espLogger("[USERS] Attempting to delete "+strconv.Itoa(len(cleanerConf.Users))+" Users", "info")
@@ -201,6 +209,7 @@ func logConfig() {
 	espLogger("CleanServiceAvailabilityHistory: "+fmt.Sprintf("%t", cleanerConf.CleanServiceAvailabilityHistory), "info")
 	espLogger("CleanContacts: "+fmt.Sprintf("%t", cleanerConf.CleanContacts), "info")
 	espLogger("CleanOrganisations: "+fmt.Sprintf("%t", cleanerConf.CleanOrganisations), "info")
+	espLogger("CleanSuppliers: "+fmt.Sprintf("%t", cleanerConf.CleanSuppliers), "info")
 	if cleanerConf.CleanUsers {
 		for _, v := range cleanerConf.Users {
 			espLogger("User ID: "+v, "info")
@@ -256,6 +265,46 @@ func processOrgs() {
 		} else {
 			espLogger("There are no organisations to delete.", "debug")
 			color.Red("There are no organisations to delete.")
+		}
+	}
+}
+
+func processSuppliers() {
+	//Process Supplier Records
+	if cleanerConf.CleanSuppliers {
+		count := 0
+		if len(cleanerConf.SupplierIDs) > 0 {
+			currentBlock = 1
+			count = len(cleanerConf.SupplierIDs)
+			espLogger("Block Size: "+strconv.Itoa(configBlockSize), "debug")
+			blocks := float64(count) / float64(configBlockSize)
+			totalBlocks = int(math.Ceil(blocks))
+			espLogger("Number of Suppliers to delete: "+strconv.Itoa(count), "debug")
+			color.Green("Number of Suppliers to delete: " + strconv.Itoa(count))
+			processEntityClean("Suppliers", configBlockSize)
+		} else {
+			espLogger("There are no Suppliers to delete.", "debug")
+			color.Red("There are no Suppliers to delete.")
+		}
+	}
+}
+
+func processSupplierContracts() {
+	//Process Supplier Contract Records
+	if cleanerConf.CleanSupplierContracts {
+		count := 0
+		if len(cleanerConf.SupplierContractIDs) > 0 {
+			currentBlock = 1
+			count = len(cleanerConf.SupplierContractIDs)
+			espLogger("Block Size: "+strconv.Itoa(configBlockSize), "debug")
+			blocks := float64(count) / float64(configBlockSize)
+			totalBlocks = int(math.Ceil(blocks))
+			espLogger("Number of Supplier Contracts to delete: "+strconv.Itoa(count), "debug")
+			color.Green("Number of Supplier Contracts to delete: " + strconv.Itoa(count))
+			processEntityClean("SupplierContracts", configBlockSize)
+		} else {
+			espLogger("There are no Supplier Contracts to delete.", "debug")
+			color.Red("There are no Supplier Contracts to delete.")
 		}
 	}
 }
@@ -407,6 +456,38 @@ func processEntityClean(entity string, chunkSize int) {
 				orgDataToStruct = append(orgDataToStruct, dataStruct{OrgID: v})
 			}
 			deleteRecords(entity, orgDataToStruct)
+		}
+
+	} else if entity == "Suppliers" && len(cleanerConf.SupplierIDs) > 0 {
+		//Split request slice in to chunks
+		var divided [][]int
+		for i := 0; i < len(cleanerConf.SupplierIDs); i += chunkSize {
+			batch := cleanerConf.SupplierIDs[i:getLowerInt(i+chunkSize, len(cleanerConf.SupplierIDs))]
+			divided = append(divided, batch)
+		}
+		//range through slice, delete request chunks
+		for _, block := range divided {
+			var dataToStruct []dataStruct
+			for _, v := range block {
+				dataToStruct = append(dataToStruct, dataStruct{SuppID: v})
+			}
+			deleteRecords(entity, dataToStruct)
+		}
+
+	} else if entity == "SupplierContracts" && len(cleanerConf.SupplierContractIDs) > 0 {
+		//Split request slice in to chunks
+		var divided [][]string
+		for i := 0; i < len(cleanerConf.SupplierContractIDs); i += chunkSize {
+			batch := cleanerConf.SupplierContractIDs[i:getLowerInt(i+chunkSize, len(cleanerConf.SupplierContractIDs))]
+			divided = append(divided, batch)
+		}
+		//range through slice, delete request chunks
+		for _, block := range divided {
+			var dataToStruct []dataStruct
+			for _, v := range block {
+				dataToStruct = append(dataToStruct, dataStruct{SuppConID: v})
+			}
+			deleteRecords(entity, dataToStruct)
 		}
 
 	} else {

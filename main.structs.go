@@ -7,9 +7,10 @@ import (
 )
 
 const (
-	version              = "1.16.2"
+	version              = "1.17.0"
 	appName              = "goHornbillCleaner"
 	appSM                = "com.hornbill.servicemanager"
+	appSuppM             = "com.hornbill.suppliermanager"
 	appBM                = "com.hornbill.boardmanager"
 	appCore              = "com.hornbill.core"
 	datetimeFormat       = "2006-01-02 15:04:05"
@@ -76,6 +77,8 @@ type dataStruct struct {
 	Count             int    `xml:"count"`
 	ContactID         int
 	OrgID             int
+	SuppID            int
+	SuppConID         string
 }
 
 type taskStruct struct {
@@ -113,6 +116,10 @@ type cleanerConfStruct struct {
 	ContactIDs                      []int
 	CleanOrganisations              bool
 	OrganisationIDs                 []int
+	CleanSuppliers                  bool
+	SupplierIDs                     []int
+	CleanSupplierContracts          bool
+	SupplierContractIDs             []string
 }
 
 type queryParamsStruct struct {
