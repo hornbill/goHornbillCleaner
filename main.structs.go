@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	version              = "1.17.0"
+	version              = "1.17.1"
 	appName              = "goHornbillCleaner"
 	appSM                = "com.hornbill.servicemanager"
 	appSuppM             = "com.hornbill.suppliermanager"

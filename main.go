@@ -149,10 +149,10 @@ func main() {
 
 func logConfig() {
 	espLogger("Config File Name: "+configFileName, "info")
-	espLogger("Dry Run: "+fmt.Sprintf("%t", configDryRun), "info")
-	espLogger("Skip Prompts: "+fmt.Sprintf("%t", configSkipPrompts), "info")
+	espLogger("Dry Run: "+strconv.FormatBool(configDryRun), "info")
+	espLogger("Skip Prompts: "+strconv.FormatBool(configSkipPrompts), "info")
 
-	espLogger("CleanRequests: "+fmt.Sprintf("%t", cleanerConf.CleanRequests), "info")
+	espLogger("CleanRequests: "+strconv.FormatBool(cleanerConf.CleanRequests), "info")
 	if cleanerConf.CleanRequests {
 		noFilters := true
 		if len(cleanerConf.RequestServices) > 0 {
@@ -160,6 +160,13 @@ func logConfig() {
 			espLogger("Filtered by Service ID(s)", "info")
 			for _, v := range cleanerConf.RequestServices {
 				espLogger("Service ID: "+strconv.Itoa(v), "info")
+			}
+		}
+		if len(cleanerConf.RequestCatalogItems) > 0 {
+			noFilters = false
+			espLogger("Filtered by Catalog Item ID(s)", "info")
+			for _, v := range cleanerConf.RequestCatalogItems {
+				espLogger("Catalog Item ID: "+strconv.Itoa(v), "info")
 			}
 		}
 		if len(cleanerConf.RequestStatuses) > 0 {
@@ -204,15 +211,120 @@ func logConfig() {
 		}
 	}
 
-	espLogger("CleanAssets: "+fmt.Sprintf("%t", cleanerConf.CleanAssets), "info")
-	espLogger("CleanUsers: "+fmt.Sprintf("%t", cleanerConf.CleanUsers), "info")
-	espLogger("CleanServiceAvailabilityHistory: "+fmt.Sprintf("%t", cleanerConf.CleanServiceAvailabilityHistory), "info")
-	espLogger("CleanContacts: "+fmt.Sprintf("%t", cleanerConf.CleanContacts), "info")
-	espLogger("CleanOrganisations: "+fmt.Sprintf("%t", cleanerConf.CleanOrganisations), "info")
-	espLogger("CleanSuppliers: "+fmt.Sprintf("%t", cleanerConf.CleanSuppliers), "info")
+	espLogger("CleanAssets: "+strconv.FormatBool(cleanerConf.CleanAssets), "info")
+	if cleanerConf.CleanAssets {
+		noFilters := true
+		if cleanerConf.AssetClassID != "" {
+			noFilters = false
+			espLogger("Filtered by AssetClassID: "+cleanerConf.AssetClassID, "info")
+		}
+		if cleanerConf.AssetTypeID != 0 {
+			noFilters = false
+			espLogger("Filtered by AssetTypeID: "+strconv.Itoa(cleanerConf.AssetTypeID), "info")
+		}
+		if len(cleanerConf.AssetFilters) > 0 {
+			noFilters = false
+			espLogger("Asset Filters:", "info")
+			for k, v := range cleanerConf.AssetFilters {
+				espLogger("==== Filter "+strconv.Itoa(k)+" ====", "info")
+				espLogger("Column Name: "+v.ColumnName, "info")
+				espLogger("Column Value: "+v.ColumnValue, "info")
+				espLogger("Operator: "+v.Operator, "info")
+				espLogger("Is General Property: "+strconv.FormatBool(v.IsGeneralProperty), "info")
+			}
+		}
+		if noFilters {
+			espLogger("No Asset filters specified, all Assets and associated data will be deleted.", "warn")
+		}
+	}
+
+	espLogger("CleanUsers: "+strconv.FormatBool(cleanerConf.CleanUsers), "info")
 	if cleanerConf.CleanUsers {
-		for _, v := range cleanerConf.Users {
-			espLogger("User ID: "+v, "info")
+		noFilters := true
+		if len(cleanerConf.Users) > 0 {
+			noFilters = false
+			espLogger("Users to delete:", "info")
+			for _, v := range cleanerConf.Users {
+				espLogger("User ID: "+v, "info")
+			}
+		}
+		if noFilters {
+			espLogger("No Users specified. No Users will be deleted.", "warn")
+		}
+	}
+
+	espLogger("CleanServiceAvailabilityHistory: "+strconv.FormatBool(cleanerConf.CleanServiceAvailabilityHistory), "info")
+	if cleanerConf.CleanServiceAvailabilityHistory {
+		noFilters := true
+		if len(cleanerConf.ServiceAvailabilityServiceIDs) > 0 {
+			noFilters = false
+			espLogger("Service IDs for Service Availability records to delete:", "info")
+			for _, v := range cleanerConf.ServiceAvailabilityServiceIDs {
+				espLogger("Service ID: "+strconv.Itoa(v), "info")
+			}
+		}
+		if noFilters {
+			espLogger("No Service IDs specified. No Service Availability data will be deleted.", "warn")
+		}
+	}
+
+	espLogger("CleanContacts: "+strconv.FormatBool(cleanerConf.CleanContacts), "info")
+	if cleanerConf.CleanContacts {
+		noFilters := true
+		if len(cleanerConf.ContactIDs) > 0 {
+			noFilters = false
+			espLogger("Contact IDs to delete:", "info")
+			for _, v := range cleanerConf.ContactIDs {
+				espLogger("Contact ID: "+strconv.Itoa(v), "info")
+			}
+		}
+		if noFilters {
+			espLogger("No Contacts specified. No Contacts will be deleted.", "warn")
+		}
+	}
+
+	espLogger("CleanOrganisations: "+strconv.FormatBool(cleanerConf.CleanOrganisations), "info")
+	if cleanerConf.CleanOrganisations {
+		noFilters := true
+		if len(cleanerConf.OrganisationIDs) > 0 {
+			noFilters = false
+			espLogger("Organisation IDs to delete:", "info")
+			for _, v := range cleanerConf.OrganisationIDs {
+				espLogger("Organisation ID: "+strconv.Itoa(v), "info")
+			}
+		}
+		if noFilters {
+			espLogger("No Organisation ID specified. No Organisations will be deleted.", "warn")
+		}
+	}
+
+	espLogger("CleanSuppliers: "+strconv.FormatBool(cleanerConf.CleanSuppliers), "info")
+	if cleanerConf.CleanSuppliers {
+		noFilters := true
+		if len(cleanerConf.SupplierIDs) > 0 {
+			noFilters = false
+			espLogger("Supplier IDs to delete:", "info")
+			for _, v := range cleanerConf.SupplierIDs {
+				espLogger("Supplier ID: "+strconv.Itoa(v), "info")
+			}
+		}
+		if noFilters {
+			espLogger("No Supplier IDs specified. No Suppliers will be deleted.", "warn")
+		}
+	}
+
+	espLogger("CleanSupplierContracts: "+strconv.FormatBool(cleanerConf.CleanSupplierContracts), "info")
+	if cleanerConf.CleanSupplierContracts {
+		noFilters := true
+		if len(cleanerConf.SupplierContractIDs) > 0 {
+			noFilters = false
+			espLogger("Supplier Contract IDs to delete:", "info")
+			for _, v := range cleanerConf.SupplierContractIDs {
+				espLogger("Supplier Contract ID: "+v, "info")
+			}
+		}
+		if noFilters {
+			espLogger("No Supplier Contract IDs specified. No Supplier Contracts will be deleted.", "warn")
 		}
 	}
 }

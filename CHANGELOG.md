@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.17.1 (August 19th, 2021)
+
+Change:
+
+- Improved log output, included all configuration at start of log
+ 
 ## 1.17.0 (July 16th, 2021)
 
 Features:
