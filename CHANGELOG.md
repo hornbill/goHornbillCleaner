@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.17.2 (August 25th, 2021)
+
+Fix:
+
+- Issue where catalog and datetime filters could not be used concurrently when deleting request records
+
 ## 1.17.1 (August 19th, 2021)
 
 Change:

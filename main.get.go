@@ -307,9 +307,6 @@ func getRecordIDs(entity string) []dataStruct {
 		for _, reqService := range cleanerConf.RequestServices {
 			espXmlmc.SetParam("service", strconv.Itoa(reqService))
 		}
-		for _, reqCatalog := range cleanerConf.RequestCatalogItems {
-			espXmlmc.SetParam("catalog", strconv.Itoa(reqCatalog))
-		}
 		if cleanerConf.RequestLogDateFrom != "" {
 			logDateFrom := cleanerConf.RequestLogDateFrom
 			boolIsDuration := durationRegex.MatchString(logDateFrom)
@@ -346,6 +343,10 @@ func getRecordIDs(entity string) []dataStruct {
 				closeDateTo = toTime.UTC().Format(datetimeFormat)
 			}
 			espXmlmc.SetParam("closedToDateTime", closeDateTo)
+		}
+
+		for _, reqCatalog := range cleanerConf.RequestCatalogItems {
+			espXmlmc.SetParam("catalog", strconv.Itoa(reqCatalog))
 		}
 
 		espXmlmc.CloseElement("queryParams")
