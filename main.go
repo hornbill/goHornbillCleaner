@@ -353,7 +353,7 @@ func processContacts() {
 			totalBlocks = int(math.Ceil(contactBlocks))
 			espLogger("Number of Contacts to delete: "+strconv.Itoa(contactCount), "debug")
 			color.Green("Number of Contacts to delete: " + strconv.Itoa(contactCount))
-			processEntityClean("Contact", configBlockSize)
+			processEntityClean("Contact", configBlockSize, "", "")
 		} else {
 			espLogger("There are no contacts to delete.", "debug")
 			color.Red("There are no contacts to delete.")
@@ -373,7 +373,7 @@ func processOrgs() {
 			totalBlocks = int(math.Ceil(orgBlocks))
 			espLogger("Number of Organisations to delete: "+strconv.Itoa(orgCount), "debug")
 			color.Green("Number of Organisations to delete: " + strconv.Itoa(orgCount))
-			processEntityClean("Organizations", configBlockSize)
+			processEntityClean("Organizations", configBlockSize, "", "")
 		} else {
 			espLogger("There are no organisations to delete.", "debug")
 			color.Red("There are no organisations to delete.")
@@ -393,7 +393,7 @@ func processSuppliers() {
 			totalBlocks = int(math.Ceil(blocks))
 			espLogger("Number of Suppliers to delete: "+strconv.Itoa(count), "debug")
 			color.Green("Number of Suppliers to delete: " + strconv.Itoa(count))
-			processEntityClean("Suppliers", configBlockSize)
+			processEntityClean("Suppliers", configBlockSize, "", "")
 		} else {
 			espLogger("There are no Suppliers to delete.", "debug")
 			color.Red("There are no Suppliers to delete.")
@@ -413,7 +413,7 @@ func processSupplierContracts() {
 			totalBlocks = int(math.Ceil(blocks))
 			espLogger("Number of Supplier Contracts to delete: "+strconv.Itoa(count), "debug")
 			color.Green("Number of Supplier Contracts to delete: " + strconv.Itoa(count))
-			processEntityClean("SupplierContracts", configBlockSize)
+			processEntityClean("SupplierContracts", configBlockSize, "", "")
 		} else {
 			espLogger("There are no Supplier Contracts to delete.", "debug")
 			color.Red("There are no Supplier Contracts to delete.")
@@ -438,10 +438,10 @@ func processRequests() {
 			if !configDryRun {
 				espLogger("Number of Requests to delete: "+strconv.Itoa(requestCount), "debug")
 				color.Green("Number of Requests to delete: " + strconv.Itoa(requestCount))
-				processEntityClean("Requests", configBlockSize)
+				processEntityClean("Requests", configBlockSize, "", "")
 			}
 		} else {
-			requestCount = getRecordCount("h_itsm_requests")
+			requestCount = getRecordCount("h_itsm_requests", "", "")
 			if requestCount > 0 {
 				currentBlock = 1
 				espLogger("Block Size: "+strconv.Itoa(configBlockSize), "debug")
@@ -450,7 +450,7 @@ func processRequests() {
 				espLogger("Request Blocks: "+strconv.Itoa(int(requestBlocks)), "debug")
 				espLogger("Total Blocks: "+strconv.Itoa(totalBlocks), "debug")
 				espLogger("Number of Requests to delete: "+strconv.Itoa(requestCount), "debug")
-				processEntityClean("Requests", configBlockSize)
+				processEntityClean("Requests", configBlockSize, "", "")
 			} else {
 				espLogger("There are no requests to delete.", "debug")
 				color.Red("There are no requests to delete.")
@@ -468,24 +468,44 @@ func processAssets() {
 			assetBlocks := float64(assetCount) / float64(configBlockSize)
 			totalBlocks = int(math.Ceil(assetBlocks))
 			espLogger("Number of Assets to delete: "+strconv.Itoa(assetCount), "debug")
-			processEntityClean("Asset", configBlockSize)
+			processEntityClean("Asset", configBlockSize, "", "")
 		} else {
 			espLogger("There are no assets to delete.", "debug")
 			color.Red("There are no assets to delete.")
 		}
-		if !configDryRun {
-			assetLinkCount := getRecordCount("h_cmdb_links")
+		//Cycle through assets that have been deleted, delete any links associated with them
+		for _, assetURN := range assetsDeleted {
+			//Process LEFT to RIGHT links
+			color.Green("Processing LEFT to RIGHT asset links for " + assetURN)
+			assetLinkCount := getRecordCount("h_cmdb_links", assetURN, "h_fk_id_l")
 			if assetLinkCount > 0 {
 				currentBlock = 1
 				assetLinkBlocks := float64(assetLinkCount) / float64(configBlockSize)
 				totalBlocks = int(math.Ceil(assetLinkBlocks))
-				espLogger("Number of Asset Links to delete: "+strconv.Itoa(assetLinkCount), "debug")
-				processEntityClean("AssetsLinks", configBlockSize)
+				espLogger("Number of Left Asset Links to delete for asset "+assetURN+": "+strconv.Itoa(assetLinkCount), "debug")
+				processEntityClean("AssetsLinks", configBlockSize, assetURN, "left")
 			} else {
-				espLogger("There are no asset links to delete.", "debug")
-				color.Red("There are no asset links to delete.")
+				espLogger("There are no left-asset links to delete for "+assetURN, "debug")
+				color.Red("There are no left-asset links to delete.")
 			}
 		}
+
+		for _, assetURN := range assetsDeleted {
+			//Process RIGHT to LEFT links
+			color.Green("Processing RIGHT to LEFT asset links for " + assetURN)
+			assetLinkCount := getRecordCount("h_cmdb_links", assetURN, "h_fk_id_r")
+			if assetLinkCount > 0 {
+				currentBlock = 1
+				assetLinkBlocks := float64(assetLinkCount) / float64(configBlockSize)
+				totalBlocks = int(math.Ceil(assetLinkBlocks))
+				espLogger("Number of right Asset Links to delete for asset "+assetURN+": "+strconv.Itoa(assetLinkCount), "debug")
+				processEntityClean("AssetsLinks", configBlockSize, assetURN, "right")
+			} else {
+				espLogger("There are no right-asset links to delete for "+assetURN, "debug")
+				color.Red("There are no right-asset links to delete.")
+			}
+		}
+
 	}
 }
 
@@ -498,7 +518,7 @@ func processServiceAvailabilityHistory() {
 			sahBlocks := float64(sahCount) / float64(configBlockSize)
 			totalBlocks = int(math.Ceil(sahBlocks))
 			espLogger("Number of ServiceStatusHistory records to delete: "+strconv.Itoa(sahCount), "debug")
-			processEntityClean("ServiceStatusHistory", configBlockSize)
+			processEntityClean("ServiceStatusHistory", configBlockSize, "", "")
 		} else {
 			espLogger("There are no ServiceStatusHistory records to delete.", "debug")
 			color.Red("There are no ServiceStatusHistory records to delete.")
@@ -518,7 +538,7 @@ func parseFlags() {
 }
 
 //processEntityClean - iterates through and processes record blocks of size defined in flag configBlockSize
-func processEntityClean(entity string, chunkSize int) {
+func processEntityClean(entity string, chunkSize int, assetURN, assetLinkDirection string) {
 	if entity == "Requests" && len(cleanerConf.RequestReferences) > 0 {
 
 		//Split request slice in to chunks
@@ -601,7 +621,16 @@ func processEntityClean(entity string, chunkSize int) {
 			}
 			deleteRecords(entity, dataToStruct)
 		}
-
+	} else if entity == "AssetsLinks" {
+		exitLoop := false
+		for !exitLoop {
+			AllRecordIDs := getAssetLinkIDs(assetURN, assetLinkDirection)
+			if len(AllRecordIDs) == 0 {
+				exitLoop = true
+				continue
+			}
+			deleteRecords(entity, AllRecordIDs)
+		}
 	} else {
 		exitLoop := false
 		for !exitLoop {

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	version              = "1.17.2"
+	version              = "1.17.3"
 	appName              = "goHornbillCleaner"
 	appSM                = "com.hornbill.servicemanager"
 	appSuppM             = "com.hornbill.suppliermanager"
@@ -31,6 +31,8 @@ var (
 	totalBlocks           int
 	durationRegex         = regexp.MustCompile(`P[0-9]*D[0-9]*H[0-9]*M[0-9]*S`)
 	espXmlmc              *apiLib.XmlmcInstStruct
+
+	assetsDeleted []string
 )
 
 type xmlmcResponse struct {
@@ -67,6 +69,8 @@ type dataStruct struct {
 	AssetID           string `xml:"h_pk_asset_id"`
 	AssetName         string `xml:"asset_name"`
 	AssetLinkID       string `xml:"h_pk_id"`
+	AssetLinkLID      string `xml:"h_fk_id_l"`
+	AssetLinkRID      string `xml:"h_fk_id_r"`
 	AssetImpactID     string `xml:"h_pk_confitemimpactid"`
 	AssetPolicyID     string `xml:"h_pk_confiteminpolicyid"`
 	AssetDependencyID string `xml:"h_pk_confitemdependencyid"`

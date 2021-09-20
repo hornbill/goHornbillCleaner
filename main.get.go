@@ -21,7 +21,7 @@ func printOnly(r rune) rune {
 }
 
 //getRecordCount - takes a table name, returns the total number of records in the entity
-func getRecordCount(table string) int {
+func getRecordCount(table, id, whereCol string) int {
 	strQuery := ""
 	if table == "h_itsm_requests" {
 		if len(cleanerConf.RequestTypes) > 0 {
@@ -149,6 +149,9 @@ func getRecordCount(table string) int {
 			}
 			strQuery += " h_type = " + strconv.Itoa(cleanerConf.AssetTypeID)
 		}
+	}
+	if table == "h_cmdb_links" && id != "" && whereCol != "" {
+		strQuery += " " + whereCol + " = '" + id + "'"
 	}
 	espXmlmc.SetParam("database", "swdata")
 	espXmlmc.SetParam("application", appSM)
@@ -488,11 +491,25 @@ func getRecordIDs(entity string) []dataStruct {
 		}
 		return xmlRespon.Params.RecordIDs
 	}
+	return nil
+}
 
+func getAssetLinkIDs(assetURN, direction string) []dataStruct {
+	if currentBlock <= totalBlocks {
+		fmt.Println("Returning block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " " + direction + " blocks of records from AssetLinks entity...")
+	} else {
+		color.Green("All " + direction + " AssetLinks records processed.")
+	}
 	//Use queryExec to get assetslinks entity records
 	espXmlmc.SetParam("application", appSM)
 	espXmlmc.SetParam("queryName", "assetLinks")
 	espXmlmc.OpenElement("queryParams")
+	if direction == "left" {
+		espXmlmc.SetParam("leftId", assetURN)
+	} else {
+		espXmlmc.SetParam("rightId", assetURN)
+	}
+
 	if !configDryRun || (configDryRun && currentBlock == 1) {
 		espXmlmc.SetParam("rowstart", "0")
 	} else {
@@ -503,18 +520,18 @@ func getRecordIDs(entity string) []dataStruct {
 	requestXML := espXmlmc.GetParam()
 	browse, err := espXmlmc.Invoke("data", "queryExec")
 	if err != nil {
-		espLogger("Call to queryExec ["+entity+"] failed when returning block "+strconv.Itoa(currentBlock), "error")
+		espLogger("Call to queryExec [assetLinks] failed when returning block "+strconv.Itoa(currentBlock), "error")
 		espLogger("Request XML: "+requestXML, "debug")
-		color.Red("Call to queryExec [" + entity + "] failed when returning block " + strconv.Itoa(currentBlock))
+		color.Red("Call to queryExec [assetLinks] failed when returning block " + strconv.Itoa(currentBlock))
 		return nil
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
-		espLogger("Unmarshal of queryExec ["+entity+"] data failed when returning block "+strconv.Itoa(currentBlock), "error")
+		espLogger("Unmarshal of queryExec [assetLinks] data failed when returning block "+strconv.Itoa(currentBlock), "error")
 		espLogger("Request XML: "+requestXML, "debug")
 		espLogger("Response XML: "+browse, "debug")
-		color.Red("Unmarshal of queryExec [" + entity + "] data failed when returning block " + strconv.Itoa(currentBlock))
+		color.Red("Unmarshal of queryExec [assetLinks] data failed when returning block " + strconv.Itoa(currentBlock))
 		return nil
 	}
 	if xmlRespon.MethodResult != "ok" {

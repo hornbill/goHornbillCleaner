@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.17.3 (September 20th, 2021)
+
+Fix:
+
+- When assets are deleted, related asset links are now deleted rather than all asset links
+
 ## 1.17.2 (August 25th, 2021)
 
 Fix:

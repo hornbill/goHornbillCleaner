@@ -23,6 +23,7 @@ func deleteRecords(entity string, records []dataStruct) {
 				}
 			} else if entity == "Asset" {
 				id = v.AssetID
+				assetsDeleted = append(assetsDeleted, "urn:sys:entity:com.hornbill.servicemanager:Asset:"+id)
 				description = "Asset Name: " + v.AssetName
 			} else if entity == "Contact" {
 				id = strconv.Itoa(v.ContactID)
@@ -36,6 +37,9 @@ func deleteRecords(entity string, records []dataStruct) {
 			} else if entity == "Suppliers" {
 				id = strconv.Itoa(v.SuppID)
 				description = "Supplier ID: " + id
+			} else if entity == "AssetsLinks" {
+				id = v.AssetID
+				description = "Asset Link ID: " + v.AssetLinkID
 			}
 			espLogger("["+strings.ToUpper(entity)+"] ID:"+id+" "+description, "info")
 		}
@@ -199,8 +203,6 @@ func deleteRecords(entity string, records []dataStruct) {
 			}
 		} else if entity == "Asset" {
 			id = v.AssetID
-		} else if entity == "AssetsLinks" {
-			id = v.AssetLinkID
 		} else if entity == "ServiceStatusHistory" {
 			id = v.HID
 		} else if entity == "Contact" {
@@ -211,6 +213,8 @@ func deleteRecords(entity string, records []dataStruct) {
 			id = strconv.Itoa(v.SuppID)
 		} else if entity == "SupplierContracts" {
 			id = v.SuppConID
+		} else if entity == "AssetsLinks" {
+			id = v.AssetLinkID
 		}
 		if id != "" {
 			idsToDelete = append(idsToDelete, id)
@@ -432,6 +436,9 @@ func entityDeleteRecords(application, entity string, keyValues []string, preserv
 	for _, keyValue := range keyValues {
 		espXmlmc.SetParam("keyValue", keyValue)
 		deletingKeys = append(deletingKeys, keyValue)
+		if entity == "Asset" {
+			assetsDeleted = append(assetsDeleted, "urn:sys:entity:com.hornbill.servicemanager:Asset:"+keyValue)
+		}
 	}
 	logKeys := strings.Join(deletingKeys[:], ";")
 	espXmlmc.SetParam("preserveOneToOneData", strconv.FormatBool(preserveOneToOneData))
