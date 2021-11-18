@@ -186,6 +186,63 @@ func getRecordCount(table, id, whereCol string) int {
 	return xmlRespon.Params.RecordCount
 }
 
+func getEmailCount() (count int) {
+	filters := cleanerConf.EmailFilters
+
+	espXmlmc.SetParam("application", appCore)
+	espXmlmc.SetParam("queryName", "systemEmailsCleaner")
+	espXmlmc.OpenElement("queryParams")
+	espXmlmc.SetParam("queryType", "count")
+	for _, v := range filters.FolderIDs {
+		espXmlmc.SetParam("folderId", strconv.Itoa(v))
+	}
+	if filters.ReceivedFrom != "" {
+		espXmlmc.SetParam("msgDateFrom", filters.ReceivedFrom)
+	}
+	if filters.ReceivedTo != "" {
+		espXmlmc.SetParam("msgDateTo", filters.ReceivedTo)
+	}
+	if filters.RecipientAddress != "" {
+		espXmlmc.SetParam("recipientAddress", filters.RecipientAddress)
+		if filters.RecipientClass != "" {
+			if class, ok := mailRecipientClasses[filters.RecipientClass]; ok {
+				espXmlmc.SetParam("recipientClass", strconv.Itoa(class))
+			}
+		}
+	}
+	if filters.Subject != "" {
+		espXmlmc.SetParam("subject", filters.Subject)
+	}
+	espXmlmc.CloseElement("queryParams")
+	requestXML := espXmlmc.GetParam()
+
+	browse, err := espXmlmc.Invoke("data", "queryExec")
+	if err != nil {
+		espLogger("count:queryExec:Invoke:"+appSM+":systemEmailsCleaner:count:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		color.Red("queryExec Invoke failed to get count for " + appSM + ":systemEmailsCleaner:count:" + err.Error())
+		return
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
+	if err != nil {
+		espLogger("queryExec:Unmarshal:"+appSM+":systemEmailsCleaner:count:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("queryExec Unmarshal failed to get count for " + appSM + ":systemEmailsCleaner:count:" + err.Error())
+		return
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("queryExec:MethodResult:"+appSM+":systemEmailsCleaner:count:"+xmlRespon.State.ErrorRet, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("queryExec MethodResult failed to get count for " + appSM + ":systemEmailsCleaner:count:" + xmlRespon.State.ErrorRet)
+		return
+	}
+	count = xmlRespon.Params.RecordIDs[0].MessageCount
+	return
+}
+
 func getAssetCount() int {
 	//Use a stored query to get asset IDs
 	espXmlmc.SetParam("application", appSM)
@@ -285,218 +342,159 @@ func getServiceAvailabilityHistoryCount() int {
 
 //getRecordIDs - returns an array of records for deletion
 func getRecordIDs(entity string) []dataStruct {
-	if currentBlock <= totalBlocks {
-		fmt.Println("Returning block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " blocks of records from " + entity + " entity...")
-	} else {
-		color.Green("All " + entity + " records processed.")
+	if currentBlock < totalBlocks {
+		fmt.Println("Returning block " + strconv.Itoa(displayBlock) + " of " + strconv.Itoa(totalBlocks) + " blocks of records from " + entity + " entity...")
+		if entity == "Requests" {
+			return getRequestRecords()
+		}
+
+		if entity == "Asset" {
+			return getAssetRecords()
+		}
+
+		if entity == "ServiceStatusHistory" {
+			return getServiceStatusHistoryRecords()
+		}
+
+		if entity == "Email" {
+			return getEmailRecords()
+		}
 	}
-	if entity == "Requests" {
-		//Use a stored query to get request IDs
-		espXmlmc.SetParam("application", appSM)
-		espXmlmc.SetParam("queryName", "_listRequestsOfType")
-		espXmlmc.OpenElement("queryParams")
-		for _, reqType := range cleanerConf.RequestTypes {
-			espXmlmc.SetParam("type", reqType)
-		}
-		if !configDryRun || (configDryRun && currentBlock == 1) {
-			espXmlmc.SetParam("rowstart", "0")
-		} else {
-			espXmlmc.SetParam("rowstart", strconv.Itoa((configBlockSize*currentBlock)-1))
-		}
-		espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
-		for _, reqStatus := range cleanerConf.RequestStatuses {
-			espXmlmc.SetParam("status", reqStatus)
-		}
-		for _, reqService := range cleanerConf.RequestServices {
-			espXmlmc.SetParam("service", strconv.Itoa(reqService))
-		}
-		if cleanerConf.RequestLogDateFrom != "" {
-			logDateFrom := cleanerConf.RequestLogDateFrom
-			boolIsDuration := durationRegex.MatchString(logDateFrom)
-			if boolIsDuration {
-				fromTime, _ := hornbillHelpers.CalculateTimeDuration(time.Now(), logDateFrom)
-				logDateFrom = fromTime.UTC().Format(datetimeFormat)
-			}
-			espXmlmc.SetParam("fromDateTime", logDateFrom)
-		}
-		if cleanerConf.RequestLogDateTo != "" {
-			logDateTo := cleanerConf.RequestLogDateTo
-			boolIsDuration := durationRegex.MatchString(logDateTo)
-			if boolIsDuration {
-				toTime, _ := hornbillHelpers.CalculateTimeDuration(time.Now(), logDateTo)
-				logDateTo = toTime.UTC().Format(datetimeFormat)
-			}
-			espXmlmc.SetParam("toDateTime", logDateTo)
-		}
-
-		if cleanerConf.RequestClosedDateFrom != "" {
-			closeDateFrom := cleanerConf.RequestClosedDateFrom
-			boolIsDuration := durationRegex.MatchString(closeDateFrom)
-			if boolIsDuration {
-				fromTime, _ := hornbillHelpers.CalculateTimeDuration(time.Now(), closeDateFrom)
-				closeDateFrom = fromTime.UTC().Format(datetimeFormat)
-			}
-			espXmlmc.SetParam("closedFromDateTime", closeDateFrom)
-		}
-		if cleanerConf.RequestClosedDateTo != "" {
-			closeDateTo := cleanerConf.RequestClosedDateTo
-			boolIsDuration := durationRegex.MatchString(closeDateTo)
-			if boolIsDuration {
-				toTime, _ := hornbillHelpers.CalculateTimeDuration(time.Now(), closeDateTo)
-				closeDateTo = toTime.UTC().Format(datetimeFormat)
-			}
-			espXmlmc.SetParam("closedToDateTime", closeDateTo)
-		}
-
-		for _, reqCatalog := range cleanerConf.RequestCatalogItems {
-			espXmlmc.SetParam("catalog", strconv.Itoa(reqCatalog))
-		}
-
-		espXmlmc.CloseElement("queryParams")
-		requestXML := espXmlmc.GetParam()
-		browse, err := espXmlmc.Invoke("data", "queryExec")
-		if err != nil {
-			espLogger("queryExec:Invoke:"+appSM+":_listRequestsOfType:"+err.Error(), "error")
-			espLogger("Request XML: "+requestXML, "debug")
-			color.Red("queryExec Invoke failed for " + appSM + ":_listRequestsOfType:" + err.Error())
-			return nil
-		}
-		var xmlRespon xmlmcResponse
-		err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
-		if err != nil {
-			espLogger("queryExec:Unmarshal:"+appSM+":_listRequestsOfType:"+err.Error(), "error")
-			espLogger("Request XML: "+requestXML, "debug")
-			espLogger("Response XML: "+browse, "debug")
-			color.Red("queryExec Unmarshal failed for " + appSM + ":_listRequestsOfType:" + err.Error())
-			return nil
-		}
-		if xmlRespon.MethodResult != "ok" {
-			espLogger("queryExec:MethodResult:"+appSM+":_listRequestsOfType:"+xmlRespon.State.ErrorRet, "error")
-			espLogger("Request XML: "+requestXML, "debug")
-			espLogger("Response XML: "+browse, "debug")
-			color.Red("queryExec MethodResult failed for " + appSM + ":_listRequestsOfType:" + xmlRespon.State.ErrorRet)
-			return nil
-		}
-		return xmlRespon.Params.RecordIDs
-	}
-
-	if entity == "Asset" {
-		//Use a stored query to get asset IDs
-		espXmlmc.SetParam("application", appSM)
-		espXmlmc.SetParam("queryName", "Asset.getAssetsFiltered")
-		espXmlmc.OpenElement("queryParams")
-		espXmlmc.SetParam("resultType", "data")
-		if cleanerConf.AssetClassID != "" {
-			espXmlmc.SetParam("assetClass", cleanerConf.AssetClassID)
-		}
-		if cleanerConf.AssetTypeID > 0 {
-			espXmlmc.SetParam("assetType", strconv.Itoa(cleanerConf.AssetTypeID))
-		}
-		if len(cleanerConf.AssetFilters) > 0 {
-			var filterList []filterStuct
-			for _, v := range cleanerConf.AssetFilters {
-				filter := filterStuct{}
-				filter.ColumnName = v.ColumnName
-				filter.ColumnValue = v.ColumnValue
-				filter.Operator = v.Operator
-				filter.IsGeneralProperty = v.IsGeneralProperty
-				filterList = append(filterList, filter)
-			}
-			filters, err := json.Marshal(filterList)
-			if err != nil {
-				espLogger("getRecordIds:Filters:Marshal:"+err.Error(), "error")
-				color.Red("getRecordIds could not marshal filters into JSON: " + err.Error())
-				return nil
-
-			}
-			espXmlmc.SetParam("filters", string(filters))
-		}
-		if !configDryRun || (configDryRun && currentBlock == 1) {
-			espXmlmc.SetParam("rowstart", "0")
-		} else {
-			espXmlmc.SetParam("rowstart", strconv.Itoa((configBlockSize*currentBlock)-1))
-		}
-		espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
-		espXmlmc.CloseElement("queryParams")
-		requestXML := espXmlmc.GetParam()
-		browse, err := espXmlmc.Invoke("data", "queryExec")
-		if err != nil {
-			espLogger("queryExec:Invoke:"+appSM+":Asset.getAssetsFiltered:"+err.Error(), "error")
-			espLogger("Request XML: "+requestXML, "debug")
-			color.Red("queryExec Invoke failed for " + appSM + ":Asset.getAssetsFiltered:" + err.Error())
-			return nil
-		}
-		var xmlRespon xmlmcResponse
-
-		err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
-		if err != nil {
-			espLogger("queryExec:Unmarshal:"+appSM+":Asset.getAssetsFiltered:"+err.Error(), "error")
-			espLogger("Request XML: "+requestXML, "debug")
-			espLogger("Response XML: "+browse, "debug")
-			color.Red("queryExec Unmarshal failed for " + appSM + ":Asset.getAssetsFiltered:" + err.Error())
-			return nil
-		}
-		if xmlRespon.MethodResult != "ok" {
-			espLogger("queryExec:MethodResult:"+appSM+":Asset.getAssetsFiltered:"+xmlRespon.State.ErrorRet, "error")
-			espLogger("Request XML: "+requestXML, "debug")
-			espLogger("Response XML: "+browse, "debug")
-			color.Red("queryExec MethodResult failed for " + appSM + ":Asset.getAssetsFiltered:" + xmlRespon.State.ErrorRet)
-			return nil
-		}
-		return xmlRespon.Params.RecordIDs
-	}
-
-	if entity == "ServiceStatusHistory" {
-		//Use a stored query to get asset IDs
-		espXmlmc.SetParam("application", appSM)
-		espXmlmc.SetParam("queryName", "_listServiceStatusHistory")
-		espXmlmc.OpenElement("queryParams")
-		for _, v := range cleanerConf.ServiceAvailabilityServiceIDs {
-			espXmlmc.SetParam("serviceId", strconv.Itoa(v))
-		}
-		if !configDryRun || (configDryRun && currentBlock == 1) {
-			espXmlmc.SetParam("rowstart", "0")
-		} else {
-			espXmlmc.SetParam("rowstart", strconv.Itoa((configBlockSize*currentBlock)-1))
-		}
-		espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
-		espXmlmc.CloseElement("queryParams")
-		espXmlmc.OpenElement("queryOptions")
-		espXmlmc.SetParam("querytype", "records")
-		espXmlmc.CloseElement("queryOptions")
-		requestXML := espXmlmc.GetParam()
-		browse, err := espXmlmc.Invoke("data", "queryExec")
-		if err != nil {
-			espLogger("queryExec:Invoke:"+appSM+":_listServiceStatusHistory:"+err.Error(), "error")
-			espLogger("Request XML: "+requestXML, "debug")
-			color.Red("queryExec Invoke failed for " + appSM + ":_listServiceStatusHistory:" + err.Error())
-			return nil
-		}
-		var xmlRespon xmlmcResponse
-
-		err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
-		if err != nil {
-			espLogger("queryExec:Unmarshal:"+appSM+":_listServiceStatusHistory:"+err.Error(), "error")
-			espLogger("Request XML: "+requestXML, "debug")
-			espLogger("Response XML: "+browse, "debug")
-			color.Red("queryExec Unmarshal failed for " + appSM + ":_listServiceStatusHistory:" + err.Error())
-			return nil
-		}
-		if xmlRespon.MethodResult != "ok" {
-			espLogger("queryExec:MethodResult:"+appSM+":_listServiceStatusHistory:"+xmlRespon.State.ErrorRet, "error")
-			espLogger("Request XML: "+requestXML, "debug")
-			espLogger("Response XML: "+browse, "debug")
-			color.Red("queryExec MethodResult failed for " + appSM + ":_listServiceStatusHistory:" + xmlRespon.State.ErrorRet)
-			return nil
-		}
-		return xmlRespon.Params.RecordIDs
-	}
+	color.Green("All " + entity + " records processed.")
 	return nil
 }
 
+func getEmailRecords() []dataStruct {
+	filters := cleanerConf.EmailFilters
+	espXmlmc.SetParam("application", appCore)
+	espXmlmc.SetParam("queryName", "systemEmailsCleaner")
+	espXmlmc.OpenElement("queryParams")
+	espXmlmc.SetParam("queryType", "records")
+	for _, v := range filters.FolderIDs {
+		espXmlmc.SetParam("folderId", strconv.Itoa(v))
+	}
+	if filters.ReceivedFrom != "" {
+		espXmlmc.SetParam("msgDateFrom", filters.ReceivedFrom)
+	}
+	if filters.ReceivedTo != "" {
+		espXmlmc.SetParam("msgDateTo", filters.ReceivedTo)
+	}
+	if filters.RecipientAddress != "" {
+		espXmlmc.SetParam("recipientAddress", filters.RecipientAddress)
+		if filters.RecipientClass != "" {
+			if class, ok := mailRecipientClasses[filters.RecipientClass]; ok {
+				espXmlmc.SetParam("recipientClass", strconv.Itoa(class))
+			}
+		}
+	}
+	if filters.Subject != "" {
+		espXmlmc.SetParam("subject", filters.Subject)
+	}
+
+	if !configDryRun || (configDryRun && currentBlock == 0) {
+		espXmlmc.SetParam("rowstart", "0")
+	} else {
+		espXmlmc.SetParam("rowstart", strconv.Itoa(configBlockSize*currentBlock))
+	}
+	espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
+	espXmlmc.CloseElement("queryParams")
+	requestXML := espXmlmc.GetParam()
+	browse, err := espXmlmc.Invoke("data", "queryExec")
+	if err != nil {
+		espLogger("queryExec:Invoke:"+appCore+":systemEmailsCleaner:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		color.Red("queryExec Invoke failed for " + appSM + ":systemEmailsCleaner:" + err.Error())
+		return nil
+	}
+	var xmlRespon xmlmcResponse
+
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
+	if err != nil {
+		espLogger("queryExec:Unmarshal:"+appCore+":systemEmailsCleaner:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("queryExec Unmarshal failed for " + appCore + ":systemEmailsCleaner:" + err.Error())
+		return nil
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("queryExec:MethodResult:"+appCore+":systemEmailsCleaner:"+xmlRespon.State.ErrorRet, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("queryExec MethodResult failed for " + appCore + ":systemEmailsCleaner:" + xmlRespon.State.ErrorRet)
+		return nil
+	}
+	return xmlRespon.Params.RecordIDs
+}
+
+func getAssetRecords() []dataStruct {
+	//Use a stored query to get asset IDs
+	espXmlmc.SetParam("application", appSM)
+	espXmlmc.SetParam("queryName", "Asset.getAssetsFiltered")
+	espXmlmc.OpenElement("queryParams")
+	espXmlmc.SetParam("resultType", "data")
+	if cleanerConf.AssetClassID != "" {
+		espXmlmc.SetParam("assetClass", cleanerConf.AssetClassID)
+	}
+	if cleanerConf.AssetTypeID > 0 {
+		espXmlmc.SetParam("assetType", strconv.Itoa(cleanerConf.AssetTypeID))
+	}
+	if len(cleanerConf.AssetFilters) > 0 {
+		var filterList []filterStuct
+		for _, v := range cleanerConf.AssetFilters {
+			filter := filterStuct{}
+			filter.ColumnName = v.ColumnName
+			filter.ColumnValue = v.ColumnValue
+			filter.Operator = v.Operator
+			filter.IsGeneralProperty = v.IsGeneralProperty
+			filterList = append(filterList, filter)
+		}
+		filters, err := json.Marshal(filterList)
+		if err != nil {
+			espLogger("getRecordIds:Filters:Marshal:"+err.Error(), "error")
+			color.Red("getRecordIds could not marshal filters into JSON: " + err.Error())
+			return nil
+
+		}
+		espXmlmc.SetParam("filters", string(filters))
+	}
+	if !configDryRun || (configDryRun && currentBlock == 0) {
+		espXmlmc.SetParam("rowstart", "0")
+	} else {
+		espXmlmc.SetParam("rowstart", strconv.Itoa(configBlockSize*currentBlock))
+	}
+	espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
+	espXmlmc.CloseElement("queryParams")
+	requestXML := espXmlmc.GetParam()
+	browse, err := espXmlmc.Invoke("data", "queryExec")
+	if err != nil {
+		espLogger("queryExec:Invoke:"+appSM+":Asset.getAssetsFiltered:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		color.Red("queryExec Invoke failed for " + appSM + ":Asset.getAssetsFiltered:" + err.Error())
+		return nil
+	}
+	var xmlRespon xmlmcResponse
+
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
+	if err != nil {
+		espLogger("queryExec:Unmarshal:"+appSM+":Asset.getAssetsFiltered:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("queryExec Unmarshal failed for " + appSM + ":Asset.getAssetsFiltered:" + err.Error())
+		return nil
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("queryExec:MethodResult:"+appSM+":Asset.getAssetsFiltered:"+xmlRespon.State.ErrorRet, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("queryExec MethodResult failed for " + appSM + ":Asset.getAssetsFiltered:" + xmlRespon.State.ErrorRet)
+		return nil
+	}
+	return xmlRespon.Params.RecordIDs
+}
+
 func getAssetLinkIDs(assetURN, direction string) []dataStruct {
-	if currentBlock <= totalBlocks {
-		fmt.Println("Returning block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " " + direction + " blocks of records from AssetLinks entity...")
+	if currentBlock < totalBlocks {
+		fmt.Println("Returning block " + strconv.Itoa(displayBlock) + " of " + strconv.Itoa(totalBlocks) + " " + direction + " blocks of records from AssetLinks entity...")
 	} else {
 		color.Green("All " + direction + " AssetLinks records processed.")
 	}
@@ -510,28 +508,28 @@ func getAssetLinkIDs(assetURN, direction string) []dataStruct {
 		espXmlmc.SetParam("rightId", assetURN)
 	}
 
-	if !configDryRun || (configDryRun && currentBlock == 1) {
+	if !configDryRun || (configDryRun && currentBlock == 0) {
 		espXmlmc.SetParam("rowstart", "0")
 	} else {
-		espXmlmc.SetParam("rowstart", strconv.Itoa((configBlockSize*currentBlock)-1))
+		espXmlmc.SetParam("rowstart", strconv.Itoa(configBlockSize*currentBlock))
 	}
 	espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
 	espXmlmc.CloseElement("queryParams")
 	requestXML := espXmlmc.GetParam()
 	browse, err := espXmlmc.Invoke("data", "queryExec")
 	if err != nil {
-		espLogger("Call to queryExec [assetLinks] failed when returning block "+strconv.Itoa(currentBlock), "error")
+		espLogger("Call to queryExec [assetLinks] failed when returning block "+strconv.Itoa(displayBlock), "error")
 		espLogger("Request XML: "+requestXML, "debug")
-		color.Red("Call to queryExec [assetLinks] failed when returning block " + strconv.Itoa(currentBlock))
+		color.Red("Call to queryExec [assetLinks] failed when returning block " + strconv.Itoa(displayBlock))
 		return nil
 	}
 	var xmlRespon xmlmcResponse
 	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
 	if err != nil {
-		espLogger("Unmarshal of queryExec [assetLinks] data failed when returning block "+strconv.Itoa(currentBlock), "error")
+		espLogger("Unmarshal of queryExec [assetLinks] data failed when returning block "+strconv.Itoa(displayBlock), "error")
 		espLogger("Request XML: "+requestXML, "debug")
 		espLogger("Response XML: "+browse, "debug")
-		color.Red("Unmarshal of queryExec [assetLinks] data failed when returning block " + strconv.Itoa(currentBlock))
+		color.Red("Unmarshal of queryExec [assetLinks] data failed when returning block " + strconv.Itoa(displayBlock))
 		return nil
 	}
 	if xmlRespon.MethodResult != "ok" {
@@ -539,6 +537,96 @@ func getAssetLinkIDs(assetURN, direction string) []dataStruct {
 		espLogger("Request XML: "+requestXML, "debug")
 		espLogger("Response XML: "+browse, "debug")
 		color.Red("AssetLinks queryExec was unsuccessful: " + xmlRespon.State.ErrorRet)
+		return nil
+	}
+	return xmlRespon.Params.RecordIDs
+}
+
+func getRequestRecords() []dataStruct {
+	//Use a stored query to get request IDs
+	espXmlmc.SetParam("application", appSM)
+	espXmlmc.SetParam("queryName", "_listRequestsOfType")
+	espXmlmc.OpenElement("queryParams")
+	for _, reqType := range cleanerConf.RequestTypes {
+		espXmlmc.SetParam("type", reqType)
+	}
+	if !configDryRun || (configDryRun && currentBlock == 0) {
+		espXmlmc.SetParam("rowstart", "0")
+	} else {
+		espXmlmc.SetParam("rowstart", strconv.Itoa(configBlockSize*currentBlock))
+	}
+	espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
+	for _, reqStatus := range cleanerConf.RequestStatuses {
+		espXmlmc.SetParam("status", reqStatus)
+	}
+	for _, reqService := range cleanerConf.RequestServices {
+		espXmlmc.SetParam("service", strconv.Itoa(reqService))
+	}
+	if cleanerConf.RequestLogDateFrom != "" {
+		logDateFrom := cleanerConf.RequestLogDateFrom
+		boolIsDuration := durationRegex.MatchString(logDateFrom)
+		if boolIsDuration {
+			fromTime, _ := hornbillHelpers.CalculateTimeDuration(time.Now(), logDateFrom)
+			logDateFrom = fromTime.UTC().Format(datetimeFormat)
+		}
+		espXmlmc.SetParam("fromDateTime", logDateFrom)
+	}
+	if cleanerConf.RequestLogDateTo != "" {
+		logDateTo := cleanerConf.RequestLogDateTo
+		boolIsDuration := durationRegex.MatchString(logDateTo)
+		if boolIsDuration {
+			toTime, _ := hornbillHelpers.CalculateTimeDuration(time.Now(), logDateTo)
+			logDateTo = toTime.UTC().Format(datetimeFormat)
+		}
+		espXmlmc.SetParam("toDateTime", logDateTo)
+	}
+
+	if cleanerConf.RequestClosedDateFrom != "" {
+		closeDateFrom := cleanerConf.RequestClosedDateFrom
+		boolIsDuration := durationRegex.MatchString(closeDateFrom)
+		if boolIsDuration {
+			fromTime, _ := hornbillHelpers.CalculateTimeDuration(time.Now(), closeDateFrom)
+			closeDateFrom = fromTime.UTC().Format(datetimeFormat)
+		}
+		espXmlmc.SetParam("closedFromDateTime", closeDateFrom)
+	}
+	if cleanerConf.RequestClosedDateTo != "" {
+		closeDateTo := cleanerConf.RequestClosedDateTo
+		boolIsDuration := durationRegex.MatchString(closeDateTo)
+		if boolIsDuration {
+			toTime, _ := hornbillHelpers.CalculateTimeDuration(time.Now(), closeDateTo)
+			closeDateTo = toTime.UTC().Format(datetimeFormat)
+		}
+		espXmlmc.SetParam("closedToDateTime", closeDateTo)
+	}
+
+	for _, reqCatalog := range cleanerConf.RequestCatalogItems {
+		espXmlmc.SetParam("catalog", strconv.Itoa(reqCatalog))
+	}
+
+	espXmlmc.CloseElement("queryParams")
+	requestXML := espXmlmc.GetParam()
+	browse, err := espXmlmc.Invoke("data", "queryExec")
+	if err != nil {
+		espLogger("queryExec:Invoke:"+appSM+":_listRequestsOfType:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		color.Red("queryExec Invoke failed for " + appSM + ":_listRequestsOfType:" + err.Error())
+		return nil
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
+	if err != nil {
+		espLogger("queryExec:Unmarshal:"+appSM+":_listRequestsOfType:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("queryExec Unmarshal failed for " + appSM + ":_listRequestsOfType:" + err.Error())
+		return nil
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("queryExec:MethodResult:"+appSM+":_listRequestsOfType:"+xmlRespon.State.ErrorRet, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("queryExec MethodResult failed for " + appSM + ":_listRequestsOfType:" + xmlRespon.State.ErrorRet)
 		return nil
 	}
 	return xmlRespon.Params.RecordIDs
@@ -648,6 +736,52 @@ func getRequestWorkflow(callRef string) string {
 	}
 	returnWorkflowID = xmlRespon.Params.BPMID
 	return returnWorkflowID
+}
+
+func getServiceStatusHistoryRecords() []dataStruct {
+	//Use a stored query to get asset IDs
+	espXmlmc.SetParam("application", appSM)
+	espXmlmc.SetParam("queryName", "_listServiceStatusHistory")
+	espXmlmc.OpenElement("queryParams")
+	for _, v := range cleanerConf.ServiceAvailabilityServiceIDs {
+		espXmlmc.SetParam("serviceId", strconv.Itoa(v))
+	}
+	if !configDryRun || (configDryRun && currentBlock == 0) {
+		espXmlmc.SetParam("rowstart", "0")
+	} else {
+		espXmlmc.SetParam("rowstart", strconv.Itoa(configBlockSize*currentBlock))
+	}
+	espXmlmc.SetParam("limit", strconv.Itoa(configBlockSize))
+	espXmlmc.CloseElement("queryParams")
+	espXmlmc.OpenElement("queryOptions")
+	espXmlmc.SetParam("querytype", "records")
+	espXmlmc.CloseElement("queryOptions")
+	requestXML := espXmlmc.GetParam()
+	browse, err := espXmlmc.Invoke("data", "queryExec")
+	if err != nil {
+		espLogger("queryExec:Invoke:"+appSM+":_listServiceStatusHistory:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		color.Red("queryExec Invoke failed for " + appSM + ":_listServiceStatusHistory:" + err.Error())
+		return nil
+	}
+	var xmlRespon xmlmcResponse
+
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
+	if err != nil {
+		espLogger("queryExec:Unmarshal:"+appSM+":_listServiceStatusHistory:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("queryExec Unmarshal failed for " + appSM + ":_listServiceStatusHistory:" + err.Error())
+		return nil
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("queryExec:MethodResult:"+appSM+":_listServiceStatusHistory:"+xmlRespon.State.ErrorRet, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("queryExec MethodResult failed for " + appSM + ":_listServiceStatusHistory:" + xmlRespon.State.ErrorRet)
+		return nil
+	}
+	return xmlRespon.Params.RecordIDs
 }
 
 func getAppList() ([]appsStruct, bool) {

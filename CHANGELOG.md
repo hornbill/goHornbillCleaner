@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 1.18.0 (November 4th, 2021)
+
+Feature:
+
+- Added support to bulk-delete email records
+- Changed case of BlockSize argument to blocksize, for consistency with the other arguments
+
 ## 1.17.3 (September 20th, 2021)
 
 Fix:

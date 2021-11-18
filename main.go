@@ -55,19 +55,39 @@ func main() {
 		return
 	}
 
-	//Ask if we want to delete before continuing
 	fmt.Println("")
 	fmt.Println("===== Hornbill Cleaner Utility v" + version + " =====")
-	if !cleanerConf.CleanRequests && !cleanerConf.CleanAssets && !cleanerConf.CleanUsers && !cleanerConf.CleanServiceAvailabilityHistory && !cleanerConf.CleanContacts && !cleanerConf.CleanOrganisations && !cleanerConf.CleanSuppliers && !cleanerConf.CleanSupplierContracts {
+
+	//Check config to make sure we have cleaning definitions
+	if !cleanerConf.CleanRequests &&
+		!cleanerConf.CleanAssets &&
+		!cleanerConf.CleanUsers &&
+		!cleanerConf.CleanServiceAvailabilityHistory &&
+		!cleanerConf.CleanContacts &&
+		!cleanerConf.CleanOrganisations &&
+		!cleanerConf.CleanSuppliers &&
+		!cleanerConf.CleanSupplierContracts &&
+		!cleanerConf.CleanEmails {
 		color.Red("No entity data has been specified for cleansing in " + configFileName)
 		espLogger("No entity data has been specified for cleansing in "+configFileName, "error")
 		return
 	}
+
 	if cleanerConf.CleanServiceAvailabilityHistory && len(cleanerConf.ServiceAvailabilityServiceIDs) == 0 {
 		color.Red("CleanServiceAvailabilityHistory is set to true but no ServiceAvailabilityServiceIDs have been specified for cleaning in " + configFileName)
 		espLogger("CleanServiceAvailabilityHistory is set to true but no ServiceAvailabilityServiceIDs have been specified for cleaning in "+configFileName, "error")
 		return
 	}
+
+	if cleanerConf.CleanEmails {
+		if len(cleanerConf.EmailFilters.FolderIDs) == 0 {
+			color.Red("CleanEmails is set to true but no FolderIDs have been specified for cleaning in " + configFileName)
+			espLogger("CleanEmails is set to true but no FolderIDs have been specified for cleaning in "+configFileName, "error")
+			return
+		}
+	}
+
+	//Ask if we want to delete before continuing
 	fmt.Println("")
 	if configDryRun {
 		color.Green(" Hornbill instance: " + configInstance)
@@ -106,8 +126,10 @@ func main() {
 	if cleanerConf.CleanSupplierContracts && len(cleanerConf.SupplierContractIDs) > 0 {
 		color.Magenta(" * Specified Supplier Contracts")
 	}
+	if cleanerConf.CleanEmails {
+		color.Magenta(" * Emails (and related data)")
+	}
 	fmt.Println("")
-
 	if !configSkipPrompts {
 		fmt.Println("Are you sure you want to permanently delete these records? (yes/no):")
 		if !hornbillHelpers.ConfirmResponse("") {
@@ -133,6 +155,7 @@ func main() {
 	processOrgs()
 	processSuppliers()
 	processSupplierContracts()
+	processEmails()
 
 	if cleanerConf.CleanUsers {
 		espLogger("[USERS] Attempting to delete "+strconv.Itoa(len(cleanerConf.Users))+" Users", "info")
@@ -327,6 +350,41 @@ func logConfig() {
 			espLogger("No Supplier Contract IDs specified. No Supplier Contracts will be deleted.", "warn")
 		}
 	}
+
+	espLogger("CleanEmails: "+strconv.FormatBool(cleanerConf.CleanEmails), "info")
+	if cleanerConf.CleanSupplierContracts {
+		noFilters := true
+		if len(cleanerConf.EmailFilters.FolderIDs) > 0 {
+			noFilters = false
+			espLogger("Folder IDs to filter by:", "info")
+			for _, v := range cleanerConf.EmailFilters.FolderIDs {
+				espLogger("Folder ID: "+strconv.Itoa(v), "info")
+			}
+		}
+		if cleanerConf.EmailFilters.RecipientAddress != "" {
+			noFilters = false
+			espLogger("Recipient Address to filter emails by: "+cleanerConf.EmailFilters.RecipientAddress, "info")
+		}
+		if cleanerConf.EmailFilters.RecipientClass != "" {
+			noFilters = false
+			espLogger("Recipient Class to filter emails by: "+cleanerConf.EmailFilters.RecipientClass, "info")
+		}
+		if cleanerConf.EmailFilters.ReceivedFrom != "" {
+			noFilters = false
+			espLogger("Received From to filter emails by: "+cleanerConf.EmailFilters.ReceivedFrom, "info")
+		}
+		if cleanerConf.EmailFilters.ReceivedTo != "" {
+			noFilters = false
+			espLogger("Received To to filter emails by: "+cleanerConf.EmailFilters.ReceivedTo, "info")
+		}
+		if cleanerConf.EmailFilters.Subject != "" {
+			noFilters = false
+			espLogger("Subject to filter emails by: "+cleanerConf.EmailFilters.Subject, "info")
+		}
+		if noFilters {
+			espLogger("No Email Filters supplied. No Email records will be deleted.", "warn")
+		}
+	}
 }
 
 func isAppInstalled(appName string, buildVer int) bool {
@@ -346,7 +404,8 @@ func processContacts() {
 	if cleanerConf.CleanContacts {
 		contactCount := 0
 		if len(cleanerConf.ContactIDs) > 0 {
-			currentBlock = 1
+			currentBlock = 0
+			displayBlock = 1
 			contactCount = len(cleanerConf.ContactIDs)
 			espLogger("Block Size: "+strconv.Itoa(configBlockSize), "debug")
 			contactBlocks := float64(contactCount) / float64(configBlockSize)
@@ -366,7 +425,8 @@ func processOrgs() {
 	if cleanerConf.CleanOrganisations {
 		orgCount := 0
 		if len(cleanerConf.OrganisationIDs) > 0 {
-			currentBlock = 1
+			currentBlock = 0
+			displayBlock = 1
 			orgCount = len(cleanerConf.OrganisationIDs)
 			espLogger("Block Size: "+strconv.Itoa(configBlockSize), "debug")
 			orgBlocks := float64(orgCount) / float64(configBlockSize)
@@ -386,7 +446,8 @@ func processSuppliers() {
 	if cleanerConf.CleanSuppliers {
 		count := 0
 		if len(cleanerConf.SupplierIDs) > 0 {
-			currentBlock = 1
+			currentBlock = 0
+			displayBlock = 1
 			count = len(cleanerConf.SupplierIDs)
 			espLogger("Block Size: "+strconv.Itoa(configBlockSize), "debug")
 			blocks := float64(count) / float64(configBlockSize)
@@ -406,7 +467,8 @@ func processSupplierContracts() {
 	if cleanerConf.CleanSupplierContracts {
 		count := 0
 		if len(cleanerConf.SupplierContractIDs) > 0 {
-			currentBlock = 1
+			currentBlock = 0
+			displayBlock = 1
 			count = len(cleanerConf.SupplierContractIDs)
 			espLogger("Block Size: "+strconv.Itoa(configBlockSize), "debug")
 			blocks := float64(count) / float64(configBlockSize)
@@ -429,7 +491,8 @@ func processRequests() {
 
 		requestCount := 0
 		if len(cleanerConf.RequestReferences) > 0 {
-			currentBlock = 1
+			currentBlock = 0
+			displayBlock = 1
 			requestCount = len(cleanerConf.RequestReferences)
 			espLogger("Block Size: "+strconv.Itoa(configBlockSize), "debug")
 			requestBlocks := float64(requestCount) / float64(configBlockSize)
@@ -443,7 +506,8 @@ func processRequests() {
 		} else {
 			requestCount = getRecordCount("h_itsm_requests", "", "")
 			if requestCount > 0 {
-				currentBlock = 1
+				currentBlock = 0
+				displayBlock = 1
 				espLogger("Block Size: "+strconv.Itoa(configBlockSize), "debug")
 				requestBlocks := float64(requestCount) / float64(configBlockSize)
 				totalBlocks = int(math.Ceil(requestBlocks))
@@ -459,12 +523,32 @@ func processRequests() {
 	}
 }
 
+func processEmails() {
+	//Process Email Records
+	if cleanerConf.CleanEmails {
+		emailCount := getEmailCount()
+		if emailCount > 0 {
+			currentBlock = 0
+			displayBlock = 1
+			emailBlocks := float64(emailCount) / float64(configBlockSize)
+			totalBlocks = int(math.Ceil(emailBlocks))
+			espLogger("Number of emails to delete: "+strconv.Itoa(emailCount), "debug")
+			color.Green("Number of emails to delete: " + strconv.Itoa(emailCount))
+			processEntityClean("Email", configBlockSize, "", "")
+		} else {
+			espLogger("There are no emails to delete.", "debug")
+			color.Red("There are no emails to delete.")
+		}
+	}
+}
+
 func processAssets() {
 	//Process Asset Records
 	if cleanerConf.CleanAssets {
 		assetCount := getAssetCount()
 		if assetCount > 0 {
-			currentBlock = 1
+			currentBlock = 0
+			displayBlock = 1
 			assetBlocks := float64(assetCount) / float64(configBlockSize)
 			totalBlocks = int(math.Ceil(assetBlocks))
 			espLogger("Number of Assets to delete: "+strconv.Itoa(assetCount), "debug")
@@ -479,7 +563,8 @@ func processAssets() {
 			color.Green("Processing LEFT to RIGHT asset links for " + assetURN)
 			assetLinkCount := getRecordCount("h_cmdb_links", assetURN, "h_fk_id_l")
 			if assetLinkCount > 0 {
-				currentBlock = 1
+				currentBlock = 0
+				displayBlock = 1
 				assetLinkBlocks := float64(assetLinkCount) / float64(configBlockSize)
 				totalBlocks = int(math.Ceil(assetLinkBlocks))
 				espLogger("Number of Left Asset Links to delete for asset "+assetURN+": "+strconv.Itoa(assetLinkCount), "debug")
@@ -495,7 +580,8 @@ func processAssets() {
 			color.Green("Processing RIGHT to LEFT asset links for " + assetURN)
 			assetLinkCount := getRecordCount("h_cmdb_links", assetURN, "h_fk_id_r")
 			if assetLinkCount > 0 {
-				currentBlock = 1
+				currentBlock = 0
+				displayBlock = 1
 				assetLinkBlocks := float64(assetLinkCount) / float64(configBlockSize)
 				totalBlocks = int(math.Ceil(assetLinkBlocks))
 				espLogger("Number of right Asset Links to delete for asset "+assetURN+": "+strconv.Itoa(assetLinkCount), "debug")
@@ -514,7 +600,8 @@ func processServiceAvailabilityHistory() {
 	if cleanerConf.CleanServiceAvailabilityHistory {
 		sahCount := getServiceAvailabilityHistoryCount()
 		if sahCount > 0 {
-			currentBlock = 1
+			currentBlock = 0
+			displayBlock = 1
 			sahBlocks := float64(sahCount) / float64(configBlockSize)
 			totalBlocks = int(math.Ceil(sahBlocks))
 			espLogger("Number of ServiceStatusHistory records to delete: "+strconv.Itoa(sahCount), "debug")
@@ -528,12 +615,13 @@ func processServiceAvailabilityHistory() {
 
 func parseFlags() {
 	flag.StringVar(&configFileName, "file", "conf.json", "Name of Configuration File To Load")
-	flag.IntVar(&configBlockSize, "BlockSize", 3, "Number of records to delete per block")
+	flag.IntVar(&configBlockSize, "blocksize", 3, "Number of records to delete per block")
 	flag.StringVar(&configAPIKey, "apikey", "", "API key to authenticate the session with")
 	flag.StringVar(&configInstance, "instance", "", "ID of the instance (case sensitive)")
 	flag.BoolVar(&configDryRun, "dryrun", false, "DryRun mode - outputs record keys to log for review without deleting anything")
 	flag.BoolVar(&configSkipPrompts, "justrun", false, "Set to true to run the cleanup without the prompts")
 	flag.BoolVar(&configVersion, "version", false, "Returns the tool version")
+
 	flag.Parse()
 }
 
@@ -635,6 +723,7 @@ func processEntityClean(entity string, chunkSize int, assetURN, assetLinkDirecti
 		exitLoop := false
 		for !exitLoop {
 			AllRecordIDs := getRecordIDs(entity)
+
 			if len(AllRecordIDs) == 0 {
 				exitLoop = true
 				continue

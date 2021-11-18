@@ -40,14 +40,18 @@ func deleteRecords(entity string, records []dataStruct) {
 			} else if entity == "AssetsLinks" {
 				id = v.AssetID
 				description = "Asset Link ID: " + v.AssetLinkID
+			} else if entity == "Email" {
+				id = strconv.Itoa(v.MessageID)
+				description = "; Message Date: " + v.MessageDate
 			}
 			espLogger("["+strings.ToUpper(entity)+"] ID:"+id+" "+description, "info")
 		}
 		currentBlock++
+		displayBlock++
 		return
 	}
 
-	fmt.Println("Deleting block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " blocks of records from " + entity + " entity. Please wait...")
+	fmt.Println("Deleting block " + strconv.Itoa(displayBlock) + " of " + strconv.Itoa(totalBlocks) + " blocks of records from " + entity + " entity. Please wait...")
 
 	if entity == "Requests" {
 
@@ -215,6 +219,8 @@ func deleteRecords(entity string, records []dataStruct) {
 			id = v.SuppConID
 		} else if entity == "AssetsLinks" {
 			id = v.AssetLinkID
+		} else if entity == "Email" {
+			id = strconv.Itoa(v.MessageID)
 		}
 		if id != "" {
 			idsToDelete = append(idsToDelete, id)
@@ -225,14 +231,49 @@ func deleteRecords(entity string, records []dataStruct) {
 			entityDeleteRecords(appCore, entity, idsToDelete, false, false)
 		} else if entity == "Suppliers" || entity == "SupplierContracts" {
 			entityDeleteRecords(appSuppM, entity, idsToDelete, false, false)
+		} else if entity == "Email" {
+			deleteEmailRecords(idsToDelete)
 		} else {
 			entityDeleteRecords(appSM, entity, idsToDelete, false, false)
 		}
 	} else {
 		color.Yellow("Nothing to delete in this block.")
 	}
-	color.Green("Block " + strconv.Itoa(currentBlock) + " of " + strconv.Itoa(totalBlocks) + " deleted.")
+	color.Green("Block " + strconv.Itoa(displayBlock) + " of " + strconv.Itoa(totalBlocks) + " deleted.")
 	currentBlock++
+	displayBlock++
+}
+
+func deleteEmailRecords(emailIDs []string) {
+	for _, v := range emailIDs {
+		espXmlmc.SetParam("messageId", v)
+	}
+	espXmlmc.SetParam("purge", "true")
+	requestXML := espXmlmc.GetParam()
+	browse, err := espXmlmc.Invoke("mail", "deleteMessage")
+	if err != nil {
+		espLogger("mail:deleteMessage:"+err.Error(), "error")
+		espLogger(requestXML, "debug")
+		color.Red("deleteMessage Invoke failed: " + err.Error())
+		return
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
+	if err != nil {
+		espLogger("mail:deleteMessage:Unmarshal:"+err.Error(), "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("deleteMessage Unmarshal failed: " + err.Error())
+		return
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("mail:deleteMessage:"+xmlRespon.State.ErrorRet, "error")
+		espLogger("Request XML: "+requestXML, "debug")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("deleteMessage MethodResult failed for: " + xmlRespon.State.ErrorRet)
+		return
+	}
+	espLogger("Messages deleted: "+strings.Join(emailIDs[:], ","), "notice")
 }
 
 func deleteUser(strUser string) {

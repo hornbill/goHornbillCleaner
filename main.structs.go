@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	version              = "1.17.3"
+	version              = "1.18.0"
 	appName              = "goHornbillCleaner"
 	appSM                = "com.hornbill.servicemanager"
 	appSuppM             = "com.hornbill.suppliermanager"
@@ -28,11 +28,22 @@ var (
 	configSkipPrompts     bool
 	configVersion         bool
 	currentBlock          int
+	displayBlock          int
 	totalBlocks           int
 	durationRegex         = regexp.MustCompile(`P[0-9]*D[0-9]*H[0-9]*M[0-9]*S`)
 	espXmlmc              *apiLib.XmlmcInstStruct
 
 	assetsDeleted []string
+
+	mailRecipientClasses = map[string]int{
+		"unknown":         0,
+		"to":              1,
+		"cc":              2,
+		"bcc":             3,
+		"from":            4,
+		"replyTo":         5,
+		"returnReceiptTo": 6,
+	}
 )
 
 type xmlmcResponse struct {
@@ -83,6 +94,9 @@ type dataStruct struct {
 	OrgID             int
 	SuppID            int
 	SuppConID         string
+	MessageCount      int    `xml:"h_count"`
+	MessageID         int    `xml:"h_msg_id"`
+	MessageDate       string `xml:"h_msg_date"`
 }
 
 type taskStruct struct {
@@ -124,6 +138,15 @@ type cleanerConfStruct struct {
 	SupplierIDs                     []int
 	CleanSupplierContracts          bool
 	SupplierContractIDs             []string
+	CleanEmails                     bool
+	EmailFilters                    struct {
+		RecipientAddress string
+		RecipientClass   string
+		FolderIDs        []int
+		ReceivedFrom     string
+		ReceivedTo       string
+		Subject          string
+	}
 }
 
 type queryParamsStruct struct {

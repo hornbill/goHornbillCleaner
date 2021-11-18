@@ -25,5 +25,14 @@
 	"CleanSuppliers": false,
 	"SupplierIDs": [],
 	"CleanSupplierContracts": false,
-	"SupplierContractIDs": []
+	"SupplierContractIDs": [],
+	"CleanEmails": false,
+	"EmailFilters": {
+		"FolderIDs": [],
+		"RecipientAddress": "",
+		"RecipientClass": "",
+		"ReceivedFrom": "",
+		"ReceivedTo": "",
+		"Subject": ""
+	}
 }
