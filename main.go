@@ -241,10 +241,6 @@ func logConfig() {
 			noFilters = false
 			espLogger("Filtered by AssetClassID: "+cleanerConf.AssetClassID, "info")
 		}
-		if cleanerConf.AssetTypeID != 0 {
-			noFilters = false
-			espLogger("Filtered by AssetTypeID: "+strconv.Itoa(cleanerConf.AssetTypeID), "info")
-		}
 		if len(cleanerConf.AssetFilters) > 0 {
 			noFilters = false
 			espLogger("Asset Filters:", "info")
@@ -625,7 +621,7 @@ func parseFlags() {
 	flag.Parse()
 }
 
-//processEntityClean - iterates through and processes record blocks of size defined in flag configBlockSize
+// processEntityClean - iterates through and processes record blocks of size defined in flag configBlockSize
 func processEntityClean(entity string, chunkSize int, assetURN, assetLinkDirection string) {
 	if entity == "Requests" && len(cleanerConf.RequestReferences) > 0 {
 
@@ -733,7 +729,7 @@ func processEntityClean(entity string, chunkSize int, assetURN, assetLinkDirecti
 	}
 }
 
-//getLowerInt
+// getLowerInt
 func getLowerInt(a, b int) int {
 	if a <= b {
 		return a
@@ -741,7 +737,7 @@ func getLowerInt(a, b int) int {
 	return b
 }
 
-//loadConfig - loads configuration file in to struct
+// loadConfig - loads configuration file in to struct
 func loadConfig() (cleanerConfStruct, error) {
 	cwd, _ := os.Getwd()
 	configurationFilePath := cwd + "/" + configFileName
@@ -803,7 +799,7 @@ func logger(s string) {
 	log.Println(s)
 }
 
-//-- Check Latest
+// -- Check Latest
 func checkVersion() {
 	githubTag := &latest.GithubTag{
 		Owner:      "hornbill",

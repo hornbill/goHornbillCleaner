@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	version              = "1.18.0"
+	version              = "1.19.0"
 	appName              = "goHornbillCleaner"
 	appSM                = "com.hornbill.servicemanager"
 	appSuppM             = "com.hornbill.suppliermanager"
@@ -124,7 +124,6 @@ type cleanerConfStruct struct {
 	RequestReferences               []string
 	CleanAssets                     bool
 	AssetClassID                    string
-	AssetTypeID                     int
 	AssetFilters                    []assetFilterStuct
 	CleanUsers                      bool
 	Users                           []string

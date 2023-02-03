@@ -20,7 +20,7 @@ func printOnly(r rune) rune {
 	return -1
 }
 
-//getRecordCount - takes a table name, returns the total number of records in the entity
+// getRecordCount - takes a table name, returns the total number of records in the entity
 func getRecordCount(table, id, whereCol string) int {
 	strQuery := ""
 	if table == "h_itsm_requests" {
@@ -142,13 +142,6 @@ func getRecordCount(table, id, whereCol string) int {
 		if cleanerConf.AssetClassID != "" {
 			strQuery += " h_class = '" + cleanerConf.AssetClassID + "'"
 		}
-
-		if cleanerConf.AssetTypeID > 0 {
-			if strQuery != "" {
-				strQuery += " AND"
-			}
-			strQuery += " h_type = " + strconv.Itoa(cleanerConf.AssetTypeID)
-		}
 	}
 	if table == "h_cmdb_links" && id != "" && whereCol != "" {
 		strQuery += " " + whereCol + " = '" + id + "'"
@@ -252,9 +245,6 @@ func getAssetCount() int {
 	if cleanerConf.AssetClassID != "" {
 		espXmlmc.SetParam("assetClass", cleanerConf.AssetClassID)
 	}
-	if cleanerConf.AssetTypeID > 0 {
-		espXmlmc.SetParam("assetType", strconv.Itoa(cleanerConf.AssetTypeID))
-	}
 	if len(cleanerConf.AssetFilters) > 0 {
 		var filterList []filterStuct
 		for _, v := range cleanerConf.AssetFilters {
@@ -340,7 +330,7 @@ func getServiceAvailabilityHistoryCount() int {
 	return xmlRespon.Params.RecordIDs[0].Count
 }
 
-//getRecordIDs - returns an array of records for deletion
+// getRecordIDs - returns an array of records for deletion
 func getRecordIDs(entity string) []dataStruct {
 	if currentBlock < totalBlocks {
 		fmt.Println("Returning block " + strconv.Itoa(displayBlock) + " of " + strconv.Itoa(totalBlocks) + " blocks of records from " + entity + " entity...")
@@ -434,9 +424,6 @@ func getAssetRecords() []dataStruct {
 	espXmlmc.SetParam("resultType", "data")
 	if cleanerConf.AssetClassID != "" {
 		espXmlmc.SetParam("assetClass", cleanerConf.AssetClassID)
-	}
-	if cleanerConf.AssetTypeID > 0 {
-		espXmlmc.SetParam("assetType", strconv.Itoa(cleanerConf.AssetTypeID))
 	}
 	if len(cleanerConf.AssetFilters) > 0 {
 		var filterList []filterStuct
@@ -632,7 +619,7 @@ func getRequestRecords() []dataStruct {
 	return xmlRespon.Params.RecordIDs
 }
 
-//getRequestTasks - take a call reference, get all associated request tasks
+// getRequestTasks - take a call reference, get all associated request tasks
 func getRequestTasks(callRef string) map[string][]taskStruct {
 	//First get request task counters so we can set correct state
 	espXmlmc.SetParam("objectRefUrn", "urn:sys:entity:"+appSM+":Requests:"+callRef)
@@ -704,7 +691,7 @@ func getRequestTasks(callRef string) map[string][]taskStruct {
 	return nil
 }
 
-//getRequestWorkflow - take a call reference, get all associated rBPM workflow ID
+// getRequestWorkflow - take a call reference, get all associated rBPM workflow ID
 func getRequestWorkflow(callRef string) string {
 	returnWorkflowID := ""
 	espXmlmc.SetParam("application", appSM)
@@ -854,7 +841,7 @@ func entityBrowseRecords(application, entity, matchScope string, searchFilters [
 	return xmlRespon.Params.RecordIDs
 }
 
-//queryExec -
+// queryExec -
 func queryExec(application, queryName string, queryParams []queryParamsStruct) []dataStruct {
 	//Use a stored query to get timer IDs
 	espXmlmc.SetParam("application", application)

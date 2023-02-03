@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.19.0 (February 3rd, 2023)
+
+Change:
+
+- Removed AssetTypeID from the available filters, due to a change in Service Manager. This can be replaced by an entry in the AssetFilters property.
+
 ## 1.18.0 (November 4th, 2021)
 
 Feature:
