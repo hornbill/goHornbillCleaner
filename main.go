@@ -67,7 +67,8 @@ func main() {
 		!cleanerConf.CleanOrganisations &&
 		!cleanerConf.CleanSuppliers &&
 		!cleanerConf.CleanSupplierContracts &&
-		!cleanerConf.CleanEmails {
+		!cleanerConf.CleanEmails &&
+		!cleanerConf.CleanReports {
 		color.Red("No entity data has been specified for cleansing in " + configFileName)
 		espLogger("No entity data has been specified for cleansing in "+configFileName, "error")
 		return
@@ -83,6 +84,14 @@ func main() {
 		if len(cleanerConf.EmailFilters.FolderIDs) == 0 {
 			color.Red("CleanEmails is set to true but no FolderIDs have been specified for cleaning in " + configFileName)
 			espLogger("CleanEmails is set to true but no FolderIDs have been specified for cleaning in "+configFileName, "error")
+			return
+		}
+	}
+
+	if cleanerConf.CleanReports {
+		if len(cleanerConf.ReportIDs) == 0 {
+			color.Red("CleanReports is set to true but no ReportIDs have been specified for cleaning in " + configFileName)
+			espLogger("CleanReports is set to true but no ReportIDs have been specified for cleaning in "+configFileName, "error")
 			return
 		}
 	}
@@ -129,6 +138,9 @@ func main() {
 	if cleanerConf.CleanEmails {
 		color.Magenta(" * Emails (and related data)")
 	}
+	if cleanerConf.CleanReports {
+		color.Magenta(" * Specified Reports")
+	}
 	fmt.Println("")
 	if !configSkipPrompts {
 		fmt.Println("Are you sure you want to permanently delete these records? (yes/no):")
@@ -166,6 +178,17 @@ func main() {
 				deleteUser(v)
 			}
 
+		}
+	}
+
+	if cleanerConf.CleanReports {
+		espLogger("[REPORTS] Attempting to delete "+strconv.Itoa(len(cleanerConf.ReportIDs))+" Reports", "info")
+
+		for _, v := range cleanerConf.ReportIDs {
+			espLogger("[REPORT] "+strconv.Itoa(v), "info")
+			if !configDryRun {
+				deleteReport(v)
+			}
 		}
 	}
 }

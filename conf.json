@@ -1,27 +1,25 @@
 {
 	"CleanRequests": false,
-	"RequestServices":[],
-	"RequestCatalogItems":[],
-	"RequestStatuses":[],
-	"RequestTypes":[],
+	"RequestServices": [],
+	"RequestCatalogItems": [],
+	"RequestStatuses": [],
+	"RequestTypes": [],
 	"KeepRequestsCancelBPTasks": false,
-	"RequestReferences":[],
-	"RequestLogDateFrom":"",
-	"RequestLogDateTo":"",
-	"RequestClosedDateFrom":"",
-	"RequestClosedDateTo":"",
+	"RequestReferences": [],
+	"RequestLogDateFrom": "",
+	"RequestLogDateTo": "",
+	"RequestClosedDateFrom": "",
+	"RequestClosedDateTo": "",
 	"CleanAssets": false,
 	"AssetClassID": "computer",
-	"AssetFilters": [
-		{
-			"ColumnName": "h_type",
-			"ColumnValue": "3",
-			"Operator": "Equals",
-			"IsGeneralProperty": true
-		}
-	],
-	"CleanUsers":false,
-	"Users":[],
+	"AssetFilters": [{
+		"ColumnName": "h_type",
+		"ColumnValue": "3",
+		"Operator": "Equals",
+		"IsGeneralProperty": true
+	}],
+	"CleanUsers": false,
+	"Users": [],
 	"CleanServiceAvailabilityHistory": false,
 	"ServiceAvailabilityServiceIDs": [],
 	"CleanContacts": false,
@@ -40,5 +38,7 @@
 		"ReceivedFrom": "",
 		"ReceivedTo": "",
 		"Subject": ""
-	}
+	},
+	"CleanReports": false,
+	"ReportIDs": []
 }

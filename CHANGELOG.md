@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.20.0 (February 8th,  2023)
+
+Feature:
+
+- Added ability to delete reports
+
 ## 1.19.0 (February 3rd, 2023)
 
 Change:

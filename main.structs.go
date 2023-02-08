@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	version              = "1.19.0"
+	version              = "1.20.0"
 	appName              = "goHornbillCleaner"
 	appSM                = "com.hornbill.servicemanager"
 	appSuppM             = "com.hornbill.suppliermanager"
@@ -146,6 +146,8 @@ type cleanerConfStruct struct {
 		ReceivedTo       string
 		Subject          string
 	}
+	CleanReports bool
+	ReportIDs    []int
 }
 
 type queryParamsStruct struct {
