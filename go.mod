@@ -11,5 +11,5 @@ require (
 	github.com/hornbill/goApiLib v0.0.0-20210702135347-bcef2b442dbc
 	github.com/hornbill/goHornbillHelpers v0.0.0-20190110171921-6d8d037ec1e8
 	github.com/tcnksm/go-latest v0.0.0-20170313132115-e3007ae9052e
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
+	golang.org/x/net v0.7.0 // indirect
 )
