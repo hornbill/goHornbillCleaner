@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	version              = "1.20.0"
+	version              = "1.20.1"
 	appName              = "goHornbillCleaner"
 	appSM                = "com.hornbill.servicemanager"
 	appSuppM             = "com.hornbill.suppliermanager"
@@ -30,7 +30,7 @@ var (
 	currentBlock          int
 	displayBlock          int
 	totalBlocks           int
-	durationRegex         = regexp.MustCompile(`P[0-9]*D[0-9]*H[0-9]*M[0-9]*S`)
+	durationRegex         = regexp.MustCompile(`[-]{0,1}P[0-9]*D[0-9]*H[0-9]*M[0-9]*S`)
 	espXmlmc              *apiLib.XmlmcInstStruct
 
 	assetsDeleted []string

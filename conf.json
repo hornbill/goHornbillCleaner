@@ -1,5 +1,5 @@
 {
-	"CleanRequests": false,
+	"CleanRequests": true,
 	"RequestServices": [],
 	"RequestCatalogItems": [],
 	"RequestStatuses": [],
@@ -7,7 +7,7 @@
 	"KeepRequestsCancelBPTasks": false,
 	"RequestReferences": [],
 	"RequestLogDateFrom": "",
-	"RequestLogDateTo": "",
+	"RequestLogDateTo": "-P10D23H59M59S",
 	"RequestClosedDateFrom": "",
 	"RequestClosedDateTo": "",
 	"CleanAssets": false,

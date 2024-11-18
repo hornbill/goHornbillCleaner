@@ -150,6 +150,7 @@ func getRecordCount(table, id, whereCol string) int {
 	espXmlmc.SetParam("application", appSM)
 	espXmlmc.SetParam("table", table)
 	if strQuery != "" {
+		logger("[DEBUG] Record Query: " + strQuery)
 		espXmlmc.SetParam("where", strQuery)
 	}
 	requestXML := espXmlmc.GetParam()

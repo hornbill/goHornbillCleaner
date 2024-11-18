@@ -1,0 +1,5 @@
+.vscode/
+builds/
+release/
+log/
+dev*.json

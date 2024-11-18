@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.20.1 (November 18th, 2024)
+
+Fix:
+
+- Fixed negative duration support issue
+
 ## 1.20.0 (February 8th,  2023)
 
 Feature:
