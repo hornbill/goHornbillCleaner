@@ -1,5 +1,5 @@
 {
-	"CleanRequests": true,
+	"CleanRequests": false,
 	"RequestServices": [],
 	"RequestCatalogItems": [],
 	"RequestStatuses": [],
@@ -7,7 +7,7 @@
 	"KeepRequestsCancelBPTasks": false,
 	"RequestReferences": [],
 	"RequestLogDateFrom": "",
-	"RequestLogDateTo": "-P10D23H59M59S",
+	"RequestLogDateTo": "",
 	"RequestClosedDateFrom": "",
 	"RequestClosedDateTo": "",
 	"CleanAssets": false,
@@ -40,5 +40,7 @@
 		"Subject": ""
 	},
 	"CleanReports": false,
-	"ReportIDs": []
+	"ReportIDs": [],
+	"CleanChatSessions": false,
+	"ChatSessionIDs": []
 }

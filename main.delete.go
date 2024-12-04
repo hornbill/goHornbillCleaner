@@ -43,6 +43,8 @@ func deleteRecords(entity string, records []dataStruct) {
 			} else if entity == "Email" {
 				id = strconv.Itoa(v.MessageID)
 				description = "; Message Date: " + v.MessageDate
+			} else if entity == "ChatSessions" {
+				id = v.ChatSessionID
 			}
 			espLogger("["+strings.ToUpper(entity)+"] ID:"+id+" "+description, "info")
 		}
@@ -221,6 +223,8 @@ func deleteRecords(entity string, records []dataStruct) {
 			id = v.AssetLinkID
 		} else if entity == "Email" {
 			id = strconv.Itoa(v.MessageID)
+		} else if entity == "ChatSessions" {
+			id = v.ChatSessionID
 		}
 		if id != "" {
 			idsToDelete = append(idsToDelete, id)
@@ -231,6 +235,8 @@ func deleteRecords(entity string, records []dataStruct) {
 			entityDeleteRecords(appCore, entity, idsToDelete, false, false)
 		} else if entity == "Suppliers" || entity == "SupplierContracts" {
 			entityDeleteRecords(appSuppM, entity, idsToDelete, false, false)
+		} else if entity == "ChatSessions" {
+			entityDeleteRecords("com.hornbill.livechat", entity, idsToDelete, false, false)
 		} else if entity == "Email" {
 			deleteEmailRecords(idsToDelete)
 		} else {

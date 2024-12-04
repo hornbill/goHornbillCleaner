@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 1.21.0 (December 4th, 2024)
+
+**Feature**
+- Added support to clear down Live Chat chat sessions, either by a supplied list of Id's or ALL chat sessions depending on config
+
 ## 1.20.1 (November 18th, 2024)
 
 Fix:

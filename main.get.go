@@ -530,6 +530,98 @@ func getAssetLinkIDs(assetURN, direction string) []dataStruct {
 	return xmlRespon.Params.RecordIDs
 }
 
+func getChatSessionCount() int {
+
+	espXmlmc.SetParam("application", "com.hornbill.livechat")
+	espXmlmc.SetParam("queryName", "getSessionList")
+	espXmlmc.OpenElement("queryOptions")
+	espXmlmc.SetParam("querytype", "count")
+	espXmlmc.CloseElement("queryOptions")
+
+	browse, err := espXmlmc.Invoke("data", "queryExec")
+
+	if err != nil {
+		espLogger("com.hornbill.livechat/ChatSessions:getChatSessionCount:"+err.Error(), "error")
+		color.Red("livechat/ChatSessions:getChatSessionCount failed to get count:" + err.Error())
+		return 0
+	}
+	var xmlRespon xmlmcResponse
+	err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
+	if err != nil {
+		espLogger("com.hornbill.livechat/ChatSessions:getChatSessionCount:"+err.Error(), "error")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("Unmarshal failed to get count for livechat/ChatSessions:getChatSessionCount:" + err.Error())
+		return 0
+	}
+	if xmlRespon.MethodResult != "ok" {
+		espLogger("com.hornbill.livechat/ChatSessions:getChatSessionCount:"+xmlRespon.State.ErrorRet, "error")
+		espLogger("Response XML: "+browse, "debug")
+		color.Red("MethodResult failed to get count for livechat/ChatSessions:getChatSessionCount:" + xmlRespon.State.ErrorRet)
+		return 0
+	}
+	return xmlRespon.Params.RecordIDs[0].Count
+}
+
+func getChatSessionRecords(chatSessionCount int) (chatRecords []string) {
+	// Use a flowcode to get chat session IDs to delete
+	rowStart := 0
+	rowLimit := 1000
+
+	for {
+		espXmlmc.SetParam("rowStart", strconv.Itoa(rowStart))
+		espXmlmc.SetParam("rowLimit", strconv.Itoa(rowLimit))
+
+		browse, err := espXmlmc.Invoke("apps/com.hornbill.livechat/ChatSessions", "getChatSessions")
+		if err != nil {
+			espLogger("com.hornbill.livechat/ChatSessions:getChatSessions:"+err.Error(), "error")
+			color.Red("livechat/ChatSessions:getChatSessions failed to get records:" + err.Error())
+			return
+		}
+		var xmlRespon xmlmcResponse
+		err = xml.Unmarshal([]byte(strings.Map(printOnly, string(browse))), &xmlRespon)
+		if err != nil {
+			espLogger("com.hornbill.livechat/ChatSessions:getChatSessions:"+err.Error(), "error")
+			espLogger("Response XML: "+browse, "debug")
+			color.Red("Unmarshal failed to get records for livechat/ChatSessions:getChatSessions:" + err.Error())
+			return
+		}
+		if xmlRespon.MethodResult != "ok" {
+			espLogger("com.hornbill.livechat/ChatSessions:getChatSessions:"+xmlRespon.State.ErrorRet, "error")
+			espLogger("Response XML: "+browse, "debug")
+			color.Red("MethodResult failed to get records for livechat/ChatSessions:getChatSessions:" + xmlRespon.State.ErrorRet)
+			return
+		}
+		if xmlRespon.Params.Outcome != "success" {
+			espLogger("com.hornbill.livechat/ChatSessions:getChatSessions:outcome:"+xmlRespon.Params.Outcome, "error")
+			espLogger("Response XML: "+browse, "debug")
+			color.Red("MethodResult failed to get records for livechat/ChatSessions:getChatSessions:outcome" + xmlRespon.State.ErrorRet)
+			return
+		}
+
+		if xmlRespon.Params.ChatSessions != "" {
+			// ChatSessions page is a string containing an array in JSON format
+			// Unmarshal, add to dataStruct array
+			var jsonRespon []chatSessionObject
+			err = json.Unmarshal([]byte(strings.Map(printOnly, string(xmlRespon.Params.ChatSessions))), &jsonRespon)
+			if err != nil {
+				espLogger("com.hornbill.livechat/ChatSessions:getChatSessions:"+err.Error(), "error")
+				espLogger("Chat Sessions JSON: "+browse, "debug")
+				color.Red("JSON Unmarshal failed to extract chat sessions for livechat/ChatSessions:getChatSessions:" + err.Error())
+				return
+			}
+			for _, chatSession := range jsonRespon {
+				chatRecords = append(chatRecords, chatSession.SessionID)
+			}
+		}
+
+		if rowStart > chatSessionCount {
+			break
+		}
+		rowStart += rowLimit
+	}
+	return
+}
+
 func getRequestRecords() []dataStruct {
 	//Use a stored query to get request IDs
 	espXmlmc.SetParam("application", appSM)
@@ -844,7 +936,7 @@ func entityBrowseRecords(application, entity, matchScope string, searchFilters [
 
 // queryExec -
 func queryExec(application, queryName string, queryParams []queryParamsStruct) []dataStruct {
-	//Use a stored query to get timer IDs
+	//Use a stored query to get record IDs
 	espXmlmc.SetParam("application", application)
 	espXmlmc.SetParam("queryName", queryName)
 	espXmlmc.OpenElement("queryParams")

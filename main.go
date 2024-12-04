@@ -68,7 +68,8 @@ func main() {
 		!cleanerConf.CleanSuppliers &&
 		!cleanerConf.CleanSupplierContracts &&
 		!cleanerConf.CleanEmails &&
-		!cleanerConf.CleanReports {
+		!cleanerConf.CleanReports &&
+		!cleanerConf.CleanChatSessions {
 		color.Red("No entity data has been specified for cleansing in " + configFileName)
 		espLogger("No entity data has been specified for cleansing in "+configFileName, "error")
 		return
@@ -141,6 +142,13 @@ func main() {
 	if cleanerConf.CleanReports {
 		color.Magenta(" * Specified Reports")
 	}
+	if cleanerConf.CleanChatSessions {
+		if len(cleanerConf.ChatSessionIDs) > 0 {
+			color.Magenta(" * " + strconv.Itoa(len(cleanerConf.ChatSessionIDs)) + " Specified Chat Sessions")
+		} else {
+			color.Magenta(" * ALL Chat Sessions from Live Chat")
+		}
+	}
 	fmt.Println("")
 	if !configSkipPrompts {
 		fmt.Println("Are you sure you want to permanently delete these records? (yes/no):")
@@ -168,6 +176,7 @@ func main() {
 	processSuppliers()
 	processSupplierContracts()
 	processEmails()
+	processChatSessions()
 
 	if cleanerConf.CleanUsers {
 		espLogger("[USERS] Attempting to delete "+strconv.Itoa(len(cleanerConf.Users))+" Users", "info")
@@ -404,6 +413,18 @@ func logConfig() {
 			espLogger("No Email Filters supplied. No Email records will be deleted.", "warn")
 		}
 	}
+
+	espLogger("CleanChatSessions: "+strconv.FormatBool(cleanerConf.CleanChatSessions), "info")
+	if cleanerConf.CleanChatSessions {
+		if len(cleanerConf.ChatSessionIDs) > 0 {
+			espLogger("Chat Sessions to delete:", "info")
+			for _, v := range cleanerConf.ChatSessionIDs {
+				espLogger("Chat Session ID: "+v, "info")
+			}
+		} else {
+			espLogger("No Chat Session IDs specified. ALL Chat Sessions will be deleted.", "warn")
+		}
+	}
 }
 
 func isAppInstalled(appName string, buildVer int) bool {
@@ -431,7 +452,7 @@ func processContacts() {
 			totalBlocks = int(math.Ceil(contactBlocks))
 			espLogger("Number of Contacts to delete: "+strconv.Itoa(contactCount), "debug")
 			color.Green("Number of Contacts to delete: " + strconv.Itoa(contactCount))
-			processEntityClean("Contact", configBlockSize, "", "")
+			processEntityClean("Contact", configBlockSize, "", "", 0)
 		} else {
 			espLogger("There are no contacts to delete.", "debug")
 			color.Red("There are no contacts to delete.")
@@ -452,7 +473,7 @@ func processOrgs() {
 			totalBlocks = int(math.Ceil(orgBlocks))
 			espLogger("Number of Organisations to delete: "+strconv.Itoa(orgCount), "debug")
 			color.Green("Number of Organisations to delete: " + strconv.Itoa(orgCount))
-			processEntityClean("Organizations", configBlockSize, "", "")
+			processEntityClean("Organizations", configBlockSize, "", "", 0)
 		} else {
 			espLogger("There are no organisations to delete.", "debug")
 			color.Red("There are no organisations to delete.")
@@ -473,10 +494,43 @@ func processSuppliers() {
 			totalBlocks = int(math.Ceil(blocks))
 			espLogger("Number of Suppliers to delete: "+strconv.Itoa(count), "debug")
 			color.Green("Number of Suppliers to delete: " + strconv.Itoa(count))
-			processEntityClean("Suppliers", configBlockSize, "", "")
+			processEntityClean("Suppliers", configBlockSize, "", "", 0)
 		} else {
 			espLogger("There are no Suppliers to delete.", "debug")
 			color.Red("There are no Suppliers to delete.")
+		}
+	}
+}
+
+func processChatSessions() {
+	if cleanerConf.CleanChatSessions {
+		chatSessionCount := 0
+		if len(cleanerConf.ChatSessionIDs) > 0 {
+			currentBlock = 0
+			displayBlock = 1
+			chatSessionCount = len(cleanerConf.ChatSessionIDs)
+			espLogger("Block Size: "+strconv.Itoa(configBlockSize), "debug")
+			chatSessionBlocks := float64(chatSessionCount) / float64(configBlockSize)
+			totalBlocks = int(math.Ceil(chatSessionBlocks))
+			espLogger("Number of Chat Sessions to delete: "+strconv.Itoa(chatSessionCount), "debug")
+			color.Green("Number of Chat Sessions to delete: " + strconv.Itoa(chatSessionCount))
+			processEntityClean("ChatSessions", configBlockSize, "", "", 0)
+		} else {
+			chatSessionCount = getChatSessionCount()
+			if chatSessionCount > 0 {
+				currentBlock = 0
+				displayBlock = 1
+				espLogger("Block Size: "+strconv.Itoa(configBlockSize), "debug")
+				chatSessionBlocks := float64(chatSessionCount) / float64(configBlockSize)
+				totalBlocks = int(math.Ceil(chatSessionBlocks))
+				espLogger("Chat Session Blocks: "+strconv.Itoa(int(chatSessionBlocks)), "debug")
+				espLogger("Total Blocks: "+strconv.Itoa(totalBlocks), "debug")
+				espLogger("Number of Chat Sessions to delete: "+strconv.Itoa(chatSessionCount), "debug")
+				processEntityClean("ChatSessions", configBlockSize, "", "", 0)
+			} else {
+				espLogger("There are no Chat Sessions to delete.", "debug")
+				color.Red("There are no Chat Sessions to delete.")
+			}
 		}
 	}
 }
@@ -494,7 +548,7 @@ func processSupplierContracts() {
 			totalBlocks = int(math.Ceil(blocks))
 			espLogger("Number of Supplier Contracts to delete: "+strconv.Itoa(count), "debug")
 			color.Green("Number of Supplier Contracts to delete: " + strconv.Itoa(count))
-			processEntityClean("SupplierContracts", configBlockSize, "", "")
+			processEntityClean("SupplierContracts", configBlockSize, "", "", 0)
 		} else {
 			espLogger("There are no Supplier Contracts to delete.", "debug")
 			color.Red("There are no Supplier Contracts to delete.")
@@ -520,7 +574,7 @@ func processRequests() {
 			if !configDryRun {
 				espLogger("Number of Requests to delete: "+strconv.Itoa(requestCount), "debug")
 				color.Green("Number of Requests to delete: " + strconv.Itoa(requestCount))
-				processEntityClean("Requests", configBlockSize, "", "")
+				processEntityClean("Requests", configBlockSize, "", "", 0)
 			}
 		} else {
 			requestCount = getRecordCount("h_itsm_requests", "", "")
@@ -533,7 +587,7 @@ func processRequests() {
 				espLogger("Request Blocks: "+strconv.Itoa(int(requestBlocks)), "debug")
 				espLogger("Total Blocks: "+strconv.Itoa(totalBlocks), "debug")
 				espLogger("Number of Requests to delete: "+strconv.Itoa(requestCount), "debug")
-				processEntityClean("Requests", configBlockSize, "", "")
+				processEntityClean("Requests", configBlockSize, "", "", 0)
 			} else {
 				espLogger("There are no requests to delete.", "debug")
 				color.Red("There are no requests to delete.")
@@ -553,7 +607,7 @@ func processEmails() {
 			totalBlocks = int(math.Ceil(emailBlocks))
 			espLogger("Number of emails to delete: "+strconv.Itoa(emailCount), "debug")
 			color.Green("Number of emails to delete: " + strconv.Itoa(emailCount))
-			processEntityClean("Email", configBlockSize, "", "")
+			processEntityClean("Email", configBlockSize, "", "", 0)
 		} else {
 			espLogger("There are no emails to delete.", "debug")
 			color.Red("There are no emails to delete.")
@@ -571,7 +625,7 @@ func processAssets() {
 			assetBlocks := float64(assetCount) / float64(configBlockSize)
 			totalBlocks = int(math.Ceil(assetBlocks))
 			espLogger("Number of Assets to delete: "+strconv.Itoa(assetCount), "debug")
-			processEntityClean("Asset", configBlockSize, "", "")
+			processEntityClean("Asset", configBlockSize, "", "", 0)
 		} else {
 			espLogger("There are no assets to delete.", "debug")
 			color.Red("There are no assets to delete.")
@@ -587,7 +641,7 @@ func processAssets() {
 				assetLinkBlocks := float64(assetLinkCount) / float64(configBlockSize)
 				totalBlocks = int(math.Ceil(assetLinkBlocks))
 				espLogger("Number of Left Asset Links to delete for asset "+assetURN+": "+strconv.Itoa(assetLinkCount), "debug")
-				processEntityClean("AssetsLinks", configBlockSize, assetURN, "left")
+				processEntityClean("AssetsLinks", configBlockSize, assetURN, "left", 0)
 			} else {
 				espLogger("There are no left-asset links to delete for "+assetURN, "debug")
 				color.Red("There are no left-asset links to delete.")
@@ -604,7 +658,7 @@ func processAssets() {
 				assetLinkBlocks := float64(assetLinkCount) / float64(configBlockSize)
 				totalBlocks = int(math.Ceil(assetLinkBlocks))
 				espLogger("Number of right Asset Links to delete for asset "+assetURN+": "+strconv.Itoa(assetLinkCount), "debug")
-				processEntityClean("AssetsLinks", configBlockSize, assetURN, "right")
+				processEntityClean("AssetsLinks", configBlockSize, assetURN, "right", 0)
 			} else {
 				espLogger("There are no right-asset links to delete for "+assetURN, "debug")
 				color.Red("There are no right-asset links to delete.")
@@ -624,7 +678,7 @@ func processServiceAvailabilityHistory() {
 			sahBlocks := float64(sahCount) / float64(configBlockSize)
 			totalBlocks = int(math.Ceil(sahBlocks))
 			espLogger("Number of ServiceStatusHistory records to delete: "+strconv.Itoa(sahCount), "debug")
-			processEntityClean("ServiceStatusHistory", configBlockSize, "", "")
+			processEntityClean("ServiceStatusHistory", configBlockSize, "", "", 0)
 		} else {
 			espLogger("There are no ServiceStatusHistory records to delete.", "debug")
 			color.Red("There are no ServiceStatusHistory records to delete.")
@@ -645,7 +699,7 @@ func parseFlags() {
 }
 
 // processEntityClean - iterates through and processes record blocks of size defined in flag configBlockSize
-func processEntityClean(entity string, chunkSize int, assetURN, assetLinkDirection string) {
+func processEntityClean(entity string, chunkSize int, assetURN, assetLinkDirection string, recordCount int) {
 	if entity == "Requests" && len(cleanerConf.RequestReferences) > 0 {
 
 		//Split request slice in to chunks
@@ -738,6 +792,48 @@ func processEntityClean(entity string, chunkSize int, assetURN, assetLinkDirecti
 			}
 			deleteRecords(entity, AllRecordIDs)
 		}
+	} else if entity == "ChatSessions" {
+		// Get all records first
+		// Loop through in given block size
+		if len(cleanerConf.ChatSessionIDs) > 0 {
+			// Delete list of chat sessions
+			var divided [][]string
+			for i := 0; i < len(cleanerConf.ChatSessionIDs); i += chunkSize {
+				batch := cleanerConf.ChatSessionIDs[i:getLowerInt(i+chunkSize, len(cleanerConf.ChatSessionIDs))]
+				divided = append(divided, batch)
+			}
+			//range through slice, delete chat session chunks
+			for _, block := range divided {
+				var chatDataToStruct []dataStruct
+				for _, v := range block {
+					chatDataToStruct = append(chatDataToStruct, dataStruct{ChatSessionID: v})
+				}
+				deleteRecords(entity, chatDataToStruct)
+			}
+			if configDryRun {
+				color.Green("[DRYRUN] " + strconv.Itoa(len(cleanerConf.ChatSessionIDs)) + " Chat Sessions would have been deleted ")
+			}
+		} else {
+			// Delete all chat sessions
+			var divided [][]string
+			allChatSessions := getChatSessionRecords(recordCount)
+			for i := 0; i < len(allChatSessions); i += chunkSize {
+				batch := allChatSessions[i:getLowerInt(i+chunkSize, len(allChatSessions))]
+				divided = append(divided, batch)
+			}
+			//range through slice, delete chat session chunks
+			for _, block := range divided {
+				var chatDataToStruct []dataStruct
+				for _, v := range block {
+					chatDataToStruct = append(chatDataToStruct, dataStruct{ChatSessionID: v})
+				}
+				deleteRecords(entity, chatDataToStruct)
+			}
+			if configDryRun {
+				color.Green("[DRYRUN] " + strconv.Itoa(len(allChatSessions)) + " Chat Sessions would have been deleted ")
+			}
+		}
+
 	} else {
 		exitLoop := false
 		for !exitLoop {

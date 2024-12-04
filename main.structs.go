@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	version              = "1.20.1"
+	version              = "1.21.0"
 	appName              = "goHornbillCleaner"
 	appSM                = "com.hornbill.servicemanager"
 	appSuppM             = "com.hornbill.suppliermanager"
@@ -65,12 +65,16 @@ type stateStruct struct {
 }
 
 type paramsStruct struct {
-	SessionID   string       `xml:"sessionId"`
-	RecordIDs   []dataStruct `xml:"rowData>row"`
-	BPMID       string       `xml:"primaryEntityData>record>h_bpm_id"`
-	RecordCount int          `xml:"count"`
-	MaxResults  int          `xml:"option>value"`
-	Application []appsStruct `xml:"application"`
+	SessionID        string       `xml:"sessionId"`
+	RecordIDs        []dataStruct `xml:"rowData>row"`
+	BPMID            string       `xml:"primaryEntityData>record>h_bpm_id"`
+	RecordCount      int          `xml:"count"`
+	MaxResults       int          `xml:"option>value"`
+	Application      []appsStruct `xml:"application"`
+	ChatSessionCount int          `xml:"chatSessionCount"`
+	Outcome          string       `xml:"outcome"`
+	TotalRecordCount int          `xml:"totalRecordCount"`
+	ChatSessions     string       `xml:"chatSessions"` // This is a string type property containing a JSON array of chat sessions
 }
 
 type dataStruct struct {
@@ -97,6 +101,11 @@ type dataStruct struct {
 	MessageCount      int    `xml:"h_count"`
 	MessageID         int    `xml:"h_msg_id"`
 	MessageDate       string `xml:"h_msg_date"`
+	ChatSessionID string // from the string JSON array returned by getChatSessions
+}
+
+type chatSessionObject struct {
+	SessionID string `json:"h_session_id"`
 }
 
 type taskStruct struct {
@@ -146,8 +155,10 @@ type cleanerConfStruct struct {
 		ReceivedTo       string
 		Subject          string
 	}
-	CleanReports bool
-	ReportIDs    []int
+	CleanReports        bool
+	ReportIDs           []int
+	CleanChatSessions   bool
+	ChatSessionIDs []string
 }
 
 type queryParamsStruct struct {
