@@ -11,13 +11,9 @@
 	"RequestClosedDateFrom": "",
 	"RequestClosedDateTo": "",
 	"CleanAssets": false,
-	"AssetClassID": "computer",
-	"AssetFilters": [{
-		"ColumnName": "h_type",
-		"ColumnValue": "3",
-		"Operator": "Equals",
-		"IsGeneralProperty": true
-	}],
+	"AssetClassID": "",
+	"AssetFilters": [],
+	"AssetIDs": [],
 	"CleanUsers": false,
 	"Users": [],
 	"CleanServiceAvailabilityHistory": false,

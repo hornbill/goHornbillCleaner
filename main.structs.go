@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	version              = "1.21.0"
+	version              = "1.22.0"
 	appName              = "goHornbillCleaner"
 	appSM                = "com.hornbill.servicemanager"
 	appSuppM             = "com.hornbill.suppliermanager"
@@ -101,7 +101,7 @@ type dataStruct struct {
 	MessageCount      int    `xml:"h_count"`
 	MessageID         int    `xml:"h_msg_id"`
 	MessageDate       string `xml:"h_msg_date"`
-	ChatSessionID string // from the string JSON array returned by getChatSessions
+	ChatSessionID     string // from the string JSON array returned by getChatSessions
 }
 
 type chatSessionObject struct {
@@ -134,6 +134,7 @@ type cleanerConfStruct struct {
 	CleanAssets                     bool
 	AssetClassID                    string
 	AssetFilters                    []assetFilterStuct
+	AssetIDs                        []string
 	CleanUsers                      bool
 	Users                           []string
 	CleanServiceAvailabilityHistory bool
@@ -155,10 +156,10 @@ type cleanerConfStruct struct {
 		ReceivedTo       string
 		Subject          string
 	}
-	CleanReports        bool
-	ReportIDs           []int
-	CleanChatSessions   bool
-	ChatSessionIDs []string
+	CleanReports      bool
+	ReportIDs         []int
+	CleanChatSessions bool
+	ChatSessionIDs    []string
 }
 
 type queryParamsStruct struct {

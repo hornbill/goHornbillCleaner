@@ -618,7 +618,13 @@ func processEmails() {
 func processAssets() {
 	//Process Asset Records
 	if cleanerConf.CleanAssets {
-		assetCount := getAssetCount()
+		var assetCount int
+		if len(cleanerConf.AssetIDs) > 0 {
+			assetCount = len(cleanerConf.AssetIDs)
+		} else {
+			assetCount = getAssetCount()
+		}
+
 		if assetCount > 0 {
 			currentBlock = 0
 			displayBlock = 1
@@ -832,6 +838,23 @@ func processEntityClean(entity string, chunkSize int, assetURN, assetLinkDirecti
 			if configDryRun {
 				color.Green("[DRYRUN] " + strconv.Itoa(len(allChatSessions)) + " Chat Sessions would have been deleted ")
 			}
+		}
+
+	} else if entity == "Asset" && len(cleanerConf.AssetIDs) > 0 {
+
+		//Split request slice in to chunks
+		var divided [][]string
+		for i := 0; i < len(cleanerConf.AssetIDs); i += chunkSize {
+			batch := cleanerConf.AssetIDs[i:getLowerInt(i+chunkSize, len(cleanerConf.AssetIDs))]
+			divided = append(divided, batch)
+		}
+		//range through slice, delete request chunks
+		for _, block := range divided {
+			var assetDataToStruct []dataStruct
+			for _, v := range block {
+				assetDataToStruct = append(assetDataToStruct, dataStruct{AssetID: v})
+			}
+			deleteRecords(entity, assetDataToStruct)
 		}
 
 	} else {

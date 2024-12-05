@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 1.22.0 (December 5th, 2024)
+
+**Feature**
+- Added the ability to provide a list of asset Id's to delete 
+
 ## 1.21.0 (December 4th, 2024)
 
 **Feature**
